@@ -1,9 +1,16 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const config = require('./config');
-const db = require('./models'); // Import Sequelize and models
+const db = require('./models'); 
+const ussdRoutes = require('./routes/ussdRoutes');
+const i18n = require('./utils/i18n');
 
 const app = express();
+
+// Initialize i18n middleware
+// Note: For USSD, we manually set locale in ussdService/controller,
+// but having this middleware is good practice for general web requests too.
+app.use(i18n.init);
 
 // Middleware for parsing incoming request bodies
 // USSD gateways typically send data as application/x-www-form-urlencoded
@@ -14,6 +21,9 @@ app.use(bodyParser.json()); // Also parse JSON if needed for other endpoints
 app.get('/', (req, res) => {
   res.status(200).send('AgriVet USSD API is running!');
 });
+
+// Use USSD Routes
+app.use('/', ussdRoutes); // Or a specific prefix like '/api' if you have other APIs
 
 // Synchronize models with the database (for development ONLY - migrations are preferred for production)
 db.sequelize

@@ -1,0 +1,16 @@
+{
+  "welcome_language_selection": "Welcome to AgriVet. Please select your preferred language:",
+  "lang_option_en": "1. English",
+  "lang_option_rw": "2. Kinyarwanda",
+  "lang_option_sw": "3. Kiswahili",
+  "invalid_language_option": "Invalid option. Please select your preferred language:",
+  "main_menu_welcome": "Welcome to AgriVet! Please choose an option:",
+  "menu_option_register_farmer": "1. Register as Farmer",
+  "menu_option_request_service": "2. Request Service",
+  "menu_option_my_request_status": "3. My Request Status",
+  "menu_option_change_language": "4. Change Language",
+  "menu_option_exit": "5. Exit",
+  "invalid_main_menu_option": "Invalid option. Please choose an option:",
+  "feature_coming_soon": "You selected %s. This feature will be fully available in the next phase. Press %s to return to Main Menu.",
+  "exit_message": "Thank you for using AgriVet. Goodbye!"
+}

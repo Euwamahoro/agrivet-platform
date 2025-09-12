@@ -1,0 +1,16 @@
+{
+  "welcome_language_selection": "Murakaza neza kuri AgriVet. Hitamo ururimi ukunda:",
+  "lang_option_en": "1. Icyongereza",
+  "lang_option_rw": "2. Kinyarwanda",
+  "lang_option_sw": "3. Igiswahili",
+  "invalid_language_option": "Wahisemo nabi. Hitamo ururimi ukunda:",
+  "main_menu_welcome": "Murakaza neza kuri AgriVet! Hitamo icyo ushaka gukora:",
+  "menu_option_register_farmer": "1. Kwiyandikisha nku Muhinzi",
+  "menu_option_request_service": "2. Gusaba Serivisi",
+  "menu_option_my_request_status": "3. Reba aho ibyifuzo byanjye bigeze",
+  "menu_option_change_language": "4. Hindura ururimi",
+  "menu_option_exit": "5. Sohoka",
+  "invalid_main_menu_option": "Wahisemo nabi. Hitamo icyo ushaka gukora:",
+  "feature_coming_soon": "Wahisemo %s. Iyi serivisi izaboneka vuba. Kanda %s kugira ngo usubire ku Murongo Mukuru.",
+  "exit_message": "Murakoze gukoresha AgriVet. Mwirirwe!"
+}
