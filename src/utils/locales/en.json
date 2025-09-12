@@ -12,5 +12,22 @@
   "menu_option_exit": "5. Exit",
   "invalid_main_menu_option": "Invalid option. Please choose an option:",
   "feature_coming_soon": "You selected %s. This feature will be fully available in the next phase. Press %s to return to Main Menu.",
-  "exit_message": "Thank you for using AgriVet. Goodbye!"
+  "exit_message": "Thank you for using AgriVet. Goodbye!",
+  "prompt_farmer_name": "Please enter your full name:",
+  "invalid_name_input": "Invalid name. Please enter a valid name (max {{max}} characters):",
+  "prompt_province_selection": "Please select your Province:",
+  "prompt_district_selection": "Please select your District:",
+  "prompt_sector_selection": "Please select your Sector:",
+  "prompt_cell_selection": "Please select your Cell:",
+  "invalid_selection": "Invalid selection. Please try again:",
+  "farmer_registration_success": "Thank you, {{name}}! Your registration is complete for {{province}}, {{district}}, {{sector}}, {{cell}}.",
+  "farmer_already_registered": "You are already registered with AgriVet. You can update your details or access other services.",
+  "farmer_registration_failed": "Registration failed. Please try again later.",
+  "menu_option_update_details": "1. Update My Details",
+  "update_details_intro": "You selected Update My Details. Which detail would you like to update?\n1. Name\n2. Location\n0. Back to Main Menu",
+  "update_name_success": "Your name has been updated to {{name}}.",
+  "update_location_success": "Your location has been updated to {{province}}, {{district}}, {{sector}}, {{cell}}.",
+  "update_failed": "Failed to update details. Please try again.",
+  "error_generic": "An unexpected error occurred. Please try again later.",
+  "back_to_main_menu": "Back to Main Menu"
 }

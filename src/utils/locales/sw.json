@@ -12,5 +12,22 @@
   "menu_option_exit": "5. Toka",
   "invalid_main_menu_option": "Umechagua vibaya. Tafadhali chagua chaguo:",
   "feature_coming_soon": "Umechagua %s. Huduma hii itapatikana hivi karibuni. Bonyeza %s kurudi kwenye Menyu Kuu.",
-  "exit_message": "Asante kwa kutumia AgriVet. Kwaheri!"
+  "exit_message": "Asante kwa kutumia AgriVet. Kwaheri!",
+  "prompt_farmer_name": "Tafadhali weka jina lako kamili:",
+  "invalid_name_input": "Jina si sahihi. Tafadhali weka jina halali (upeo wa herufi {{max}}):",
+  "prompt_province_selection": "Tafadhali chagua Mkoa wako:",
+  "prompt_district_selection": "Tafadhali chagua Wilaya yako:",
+  "prompt_sector_selection": "Tafadhali chagua Sekta yako:",
+  "prompt_cell_selection": "Tafadhali chagua Seli yako:",
+  "invalid_selection": "Umechagua vibaya. Tafadhali jaribu tena:",
+  "farmer_registration_success": "Asante, {{name}}! Usajili wako umekamilika kwa Mkoa wa {{province}}, Wilaya ya {{district}}, Sekta ya {{sector}}, Seli ya {{cell}}.",
+  "farmer_already_registered": "Tayari umesajiliwa na AgriVet. Unaweza kusasisha maelezo yako au kufikia huduma zingine.",
+  "farmer_registration_failed": "Usajili umeshindwa. Tafadhali jaribu tena baadaye.",
+  "menu_option_update_details": "1. Sasisha Maelezo Yangu",
+  "update_details_intro": "Umechagua Sasisha Maelezo Yangu. Ni maelezo gani ungependa kusasisha?\n1. Jina\n2. Mahali\n0. Rudi kwenye Menyu Kuu",
+  "update_name_success": "Jina lako limesasishwa kuwa {{name}}.",
+  "update_location_success": "Mahali ulipo pamesasishwa kuwa Mkoa wa {{province}}, Wilaya ya {{district}}, Sekta ya {{sector}}, Seli ya {{cell}}.",
+  "update_failed": "Imeshindwa kusasisha maelezo. Tafadhali jaribu tena.",
+  "error_generic": "Hitilafu isiyotarajiwa imetokea. Tafadhali jaribu tena baadaye.",
+  "back_to_main_menu": "Rudi kwenye Menyu Kuu"
 }

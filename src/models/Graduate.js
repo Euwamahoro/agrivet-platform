@@ -33,7 +33,6 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       tableName: 'graduates',
-      underscored: true,
     }
   );
 

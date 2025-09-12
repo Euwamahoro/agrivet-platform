@@ -13,6 +13,7 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
         unique: true,
+        field: 'phone_number'
       },
       name: {
         type: Sequelize.STRING,
@@ -21,6 +22,8 @@ module.exports = {
       locationText: {
         type: Sequelize.STRING,
         allowNull: true,
+        field: 'location_text' 
+
       },
       createdAt: {
         type: Sequelize.DATE,
@@ -82,10 +85,28 @@ module.exports = {
     });
   },
 
-  down: async (queryInterface, Sequelize) => {
-    // Remove the index first
-    await queryInterface.removeIndex('graduates', 'graduates_location_idx');
-    await queryInterface.dropTable('graduates');
-    await queryInterface.dropTable('farmers');
-  },
+ down: async (queryInterface, Sequelize) => {
+  const transaction = await queryInterface.sequelize.transaction();
+  
+  try {
+    // First, remove the index
+    await queryInterface.removeIndex('graduates', 'graduates_location_idx', { transaction });
+    
+    // Then, drop the service_requests table FIRST (since it has foreign keys)
+    // Check if the table exists first to avoid errors
+    const tableExists = await queryInterface.showAllTables();
+    if (tableExists.includes('service_requests')) {
+      await queryInterface.dropTable('service_requests', { transaction });
+    }
+    
+    // Now drop the other tables
+    await queryInterface.dropTable('graduates', { transaction });
+    await queryInterface.dropTable('farmers', { transaction });
+    
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+},
 };

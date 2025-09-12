@@ -12,5 +12,22 @@
   "menu_option_exit": "5. Sohoka",
   "invalid_main_menu_option": "Wahisemo nabi. Hitamo icyo ushaka gukora:",
   "feature_coming_soon": "Wahisemo %s. Iyi serivisi izaboneka vuba. Kanda %s kugira ngo usubire ku Murongo Mukuru.",
-  "exit_message": "Murakoze gukoresha AgriVet. Mwirirwe!"
+  "exit_message": "Murakoze gukoresha AgriVet. Mwirirwe!",
+  "prompt_farmer_name": "Injira amazina yawe yose:",
+  "invalid_name_input": "Izina si ryo. Injira izina ripfuye (ntirigomba kurenza inyuguti {{max}}):",
+  "prompt_province_selection": "Hitamo Intara yawe:",
+  "prompt_district_selection": "Hitamo Akarere kawe:",
+  "prompt_sector_selection": "Hitamo Umurenge wawe:",
+  "prompt_cell_selection": "Hitamo Akagari kawe:",
+  "invalid_selection": "Wahisemo nabi. Ongera ugerageze:",
+  "farmer_registration_success": "Murakoze, {{name}}! Kwiyandikisha kwawe kwarangiye ku Intara ya {{province}}, Akarere ka {{district}}, Umurenge wa {{sector}}, Akagari ka {{cell}}.",
+  "farmer_already_registered": "Wamaze kwiyandikisha muri AgriVet. Ushobora guhindura amakuru yawe cyangwa ukabona izindi serivisi.",
+  "farmer_registration_failed": "Kwiyandikisha byarananiranye. Ongera ugerageze nyuma.",
+  "menu_option_update_details": "1. Hindura Amakuru Yanjye",
+  "update_details_intro": "Wahisemo Guhindura Amakuru Yanjye. Ni ayahe makuru ushaka guhindura?\n1. Izina\n2. Aho Utuye\n0. Subira ku Murongo Mukuru",
+  "update_name_success": "Izina ryawe ryahinduwe rihinduka {{name}}.",
+  "update_location_success": "Aho utuye hahinduwe hahinduka Intara ya {{province}}, Akarere ka {{district}}, Umurenge wa {{sector}}, Akagari ka {{cell}}.",
+  "update_failed": "Kuhindura amakuru byarananiranye. Ongera ugerageze.",
+  "error_generic": "Habaye ikibazo kitari cyitezwe. Ongera ugerageze nyuma.",
+  "back_to_main_menu": "Subira ahabanza"
 }
