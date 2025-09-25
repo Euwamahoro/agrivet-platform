@@ -40,4 +40,15 @@ module.exports = {
 
   // Other constants
   MAX_NAME_LENGTH: 50,
+
+  // Intellex API Configuration
+  INTELLEX_API_BASE_URL: 'https://api.intellex.dev/traffic/pt/',
+  
+  INTELLEX_PROVINCES_GUID: '34f68e31-b590-49d5-9d17-6226d96ad0ae',
+  INTELLEX_DISTRICTS_GUID: 'eb89b84d-f562-4410-b336-60a8f6754e5c',
+  INTELLEX_SECTORS_GUID: '96023692-9f8b-4241-91bc-6b8240e14797',
+  INTELLEX_CELLS_GUID: 'e8e7ddc7-9dc1-4462-b3d5-7e4f16a44e70',
+  
+  INTELLEX_COUNTRY_CODE: 'RW', 
+  DIASPORA_PROVINCE_NAME: 'Diaspora',
 };

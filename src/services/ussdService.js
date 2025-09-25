@@ -13,10 +13,11 @@ const {
   NAV_BACK_TO_MAIN_MENU,
   MENU_OPTION_UPDATE_DETAILS,
 } = require('../utils/constants');
-const rwanda = require('rwanda'); // Import the rwanda package
-const farmerService = require('./farmerService'); // Import farmerService
 
-// Simple in-memory session store (for development only)
+const farmerService = require('./farmerService'); 
+const adminLocationService = require('./adminLocationService');
+
+
 const sessions = {};
 
 const getSession = (sessionId) => {
@@ -25,8 +26,7 @@ const getSession = (sessionId) => {
       state: null,
       language: LANG_EN_CODE,
       lastInput: null,
-      farmerRegData: {}, // Store farmer registration data temporarily
-      // Add other session data as needed (e.g., farmer details being collected)
+      farmerRegData: {},
     };
   }
   return sessions[sessionId];
@@ -46,9 +46,7 @@ const buildUssdResponse = (message, type = USSD_CONTINUE) => {
 
 const getTranslatedMessage = (key, locale = LANG_EN_CODE, ...args) => {
   i18n.setLocale(locale);
-  // console.log(`Requesting translation for key: '${key}', locale: '${locale}'`);
   const translated = i18n.__(key, ...args);
-  // console.log(`Result: '${translated}'`);
   return translated;
 };
 
@@ -61,9 +59,8 @@ const getLanguageSelectionMenu = () => {
   return message;
 };
 
-// --- New and Updated Menu Functions ---
+//New and Updated Menu Functions
 
-// Dynamically generate Main Menu based on farmer registration status
 const getDynamicMainMenu = async (locale, phoneNumber) => {
   const farmer = await farmerService.findFarmerByPhoneNumber(phoneNumber);
   let mainMenuItem1;
@@ -72,12 +69,12 @@ const getDynamicMainMenu = async (locale, phoneNumber) => {
     mainMenuItem1 = getTranslatedMessage(
       'menu_option_update_details',
       locale
-    ); // "1. Update My Details"
+    ); 
   } else {
     mainMenuItem1 = getTranslatedMessage(
       'menu_option_register_farmer',
       locale
-    ); // "1. Register as Farmer"
+    ); 
   }
 
   const message =
@@ -94,57 +91,62 @@ const getFarmerNamePrompt = (locale) => {
   return getTranslatedMessage('prompt_farmer_name', locale);
 };
 
-const getProvincesMenu = (locale) => {
-  const provinces = rwanda.Provinces(); // Returns ['East', 'Kigali', ...]
+const getProvincesMenu = async (locale) => {
+  const provinces = await adminLocationService.getProvinces();
   let menu = getTranslatedMessage('prompt_province_selection', locale);
   provinces.forEach((p, index) => {
-    menu += `\n${index + 1}. ${p}`; // CORRECT: Use 'p' directly
+    menu += `\n${index + 1}. ${p.name}`;
   });
-  return { menu, data: provinces }; // data will now be array of strings
+  return { menu, data: provinces };
 };
 
-const getDistrictsMenu = (locale, provinceName) => {
-  // CORRECT: rwanda.Districts expects province name directly as a string
-  const districts = rwanda.Districts(provinceName); 
-
-  if (!districts || districts.length === 0) return { menu: getTranslatedMessage('invalid_selection', locale), data: [] };
+const getDistrictsMenu = async (locale, provinceCode) => {
+  const districts = await adminLocationService.getDistricts(provinceCode);
+  
+  if (!districts || districts.length === 0) {
+    console.warn(`No districts found for province code: ${provinceCode}`);
+    return { menu: getTranslatedMessage('invalid_selection', locale), data: [] };
+  }
 
   let menu = getTranslatedMessage('prompt_district_selection', locale);
   districts.forEach((d, index) => {
-    menu += `\n${index + 1}. ${d}`; // CORRECT: Use 'd' directly
+    menu += `\n${index + 1}. ${d.name}`; // Use d.name
   });
-  return { menu, data: districts }; // data will now be array of strings
+  return { menu, data: districts }; // Return objects (with name and code)
 };
 
-const getSectorsMenu = (locale, districtName) => {
-  // CORRECT: rwanda.Sectors expects district name directly as a string
-  const sectors = rwanda.Sectors(districtName); 
+const getSectorsMenu = async (locale, districtCode) => {
+  const sectors = await adminLocationService.getSectors(districtCode); // Use new service
   
-  if (!sectors || sectors.length === 0) return { menu: getTranslatedMessage('invalid_selection', locale), data: [] };
+  if (!sectors || sectors.length === 0) {
+    console.warn(`No sectors found for district code: ${districtCode}`);
+    return { menu: getTranslatedMessage('invalid_selection', locale), data: [] };
+  }
 
   let menu = getTranslatedMessage('prompt_sector_selection', locale);
   sectors.forEach((s, index) => {
-    menu += `\n${index + 1}. ${s}`; // CORRECT: Use 's' directly
+    menu += `\n${index + 1}. ${s.name}`; // Use s.name
   });
-  return { menu, data: sectors }; // data will now be array of strings
+  return { menu, data: sectors }; 
 };
 
 
-const getCellsMenu = (locale, sectorName) => {
-  // CORRECT: rwanda.Cells expects sector name directly as a string
-  const cells = rwanda.Cells(sectorName); 
+const getCellsMenu = async (locale, sectorCode) => {
+  const cells = await adminLocationService.getCells(sectorCode); // Use new service
   
-  if (!cells || cells.length === 0) return { menu: getTranslatedMessage('invalid_selection', locale), data: [] };
+  if (!cells || cells.length === 0) {
+    console.warn(`No cells found for sector code: ${sectorCode}`);
+    return { menu: getTranslatedMessage('invalid_selection', locale), data: [] };
+  }
 
   let menu = getTranslatedMessage('prompt_cell_selection', locale);
   cells.forEach((c, index) => {
-    menu += `\n${index + 1}. ${c}`; // CORRECT: Use 'c' directly
+    menu += `\n${index + 1}. ${c.name}`; // Use c.name
   });
-  return { menu, data: cells }; // data will now be array of strings
+  return { menu, data: cells }; 
 };
 
 
-// Placeholder for feature coming soon acknowledgement
 const getFeatureComingSoonMessage = (locale, featureName) => {
   return getTranslatedMessage(
     'feature_coming_soon',
@@ -170,7 +172,7 @@ module.exports = {
   buildUssdResponse,
   getTranslatedMessage,
   getLanguageSelectionMenu,
-  getDynamicMainMenu, // Use this for main menu
+  getDynamicMainMenu, 
   getFarmerNamePrompt,
   getProvincesMenu,
   getDistrictsMenu,

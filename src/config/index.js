@@ -35,6 +35,14 @@ module.exports = {
     dialect: 'postgres',
     logging: false,
   },
+
+  intellexApi: {
+    provincesKey: process.env.INTELLEX_PROVINCES_API_KEY,
+    districtsKey: process.env.INTELLEX_DISTRICTS_API_KEY,
+    sectorsKey: process.env.INTELLEX_SECTORS_API_KEY,
+    cellsKey: process.env.INTELLEX_CELLS_API_KEY,
+  },
+  
   production: {
     use_env_variable: 'DATABASE_URL', // Often provided by hosting services
     dialect: 'postgres',
