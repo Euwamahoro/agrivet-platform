@@ -299,7 +299,7 @@ The core of the current USSD system involves:
 
 **Conceptual Data Flow:**
 
-[Circuit Diagram](./imgs/flowchart.png)
+![Circuit Diagram](./imgs/flowchart.png)
 
 #### Database Schema Diagram
 
