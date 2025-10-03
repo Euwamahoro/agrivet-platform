@@ -12,16 +12,19 @@ module.exports = {
   STATE_FARMER_REG_DISTRICT: 'FARMER_REG_DISTRICT',
   STATE_FARMER_REG_SECTOR: 'FARMER_REG_SECTOR',
   STATE_FARMER_REG_CELL: 'FARMER_REG_CELL',
-  STATE_FARMER_REG_COMPLETE: 'FARMER_REG_COMPLETE', // Not strictly a state, but marks completion
-  STATE_FARMER_UPDATE_MENU: 'FARMER_UPDATE_MENU', // For updating details
+  STATE_FARMER_UPDATE_MENU: 'FARMER_UPDATE_MENU',
+  
+  // NEW STATES FOR SERVICE REQUEST
+  STATE_REQUEST_SERVICE_TYPE: 'REQUEST_SERVICE_TYPE',
+  STATE_REQUEST_DESCRIPTION: 'REQUEST_DESCRIPTION',
+  STATE_REQUEST_CONFIRM: 'REQUEST_CONFIRM', // If we want a confirmation step before final submission
 
   // Main Menu Options
-  MENU_OPTION_REGISTER_FARMER: '1', 
+  MENU_OPTION_REGISTER_FARMER: '1',
   MENU_OPTION_REQUEST_SERVICE: '2',
   MENU_OPTION_MY_REQUEST_STATUS: '3',
   MENU_OPTION_CHANGE_LANGUAGE: '4',
   MENU_OPTION_EXIT: '5',
-  // New option for registered farmers
   MENU_OPTION_UPDATE_DETAILS: '1', 
 
   // Language Options
@@ -40,15 +43,27 @@ module.exports = {
 
   // Other constants
   MAX_NAME_LENGTH: 50,
+  MAX_DESCRIPTION_LENGTH: 160, // SMS character limit consideration
 
-  // Intellex API Configuration
+  // NEW SERVICE TYPES
+  SERVICE_TYPE_AGRONOMY: 'agronomy',
+  SERVICE_TYPE_VETERINARY: 'veterinary',
+  SERVICE_TYPE_BOTH: 'both', // For graduates with dual expertise
+
+  // NEW SERVICE STATUSES
+  REQUEST_STATUS_PENDING: 'pending',
+  REQUEST_STATUS_ASSIGNED: 'assigned',
+  REQUEST_STATUS_IN_PROGRESS: 'in_progress',
+  REQUEST_STATUS_COMPLETED: 'completed',
+  REQUEST_STATUS_CANCELLED: 'cancelled',
+  REQUEST_STATUS_NO_MATCH: 'no_match',
+
+  // Intellex API Configuration (already updated)
   INTELLEX_API_BASE_URL: 'https://api.intellex.dev/traffic/pt/',
-  
   INTELLEX_PROVINCES_GUID: '34f68e31-b590-49d5-9d17-6226d96ad0ae',
   INTELLEX_DISTRICTS_GUID: 'eb89b84d-f562-4410-b336-60a8f6754e5c',
   INTELLEX_SECTORS_GUID: '96023692-9f8b-4241-91bc-6b8240e14797',
   INTELLEX_CELLS_GUID: 'e8e7ddc7-9dc1-4462-b3d5-7e4f16a44e70',
-  
-  INTELLEX_COUNTRY_CODE: 'RW', 
+  INTELLEX_COUNTRY_CODE: 'RW',
   DIASPORA_PROVINCE_NAME: 'Diaspora',
 };

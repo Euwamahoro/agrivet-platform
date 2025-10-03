@@ -8,6 +8,7 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
       },
       farmerId: {
+        
         type: DataTypes.UUID,
         allowNull: false,
         field: 'farmer_id',
@@ -18,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       graduateId: {
         type: DataTypes.UUID,
-        allowNull: true, // Initially null until assigned
+        allowNull: true,
         field: 'graduate_id',
         references: {
           model: 'graduates',

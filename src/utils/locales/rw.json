@@ -29,5 +29,15 @@
   "update_location_success": "Aho utuye hahinduwe hahinduka Intara ya {{province}}, Akarere ka {{district}}, Umurenge wa {{sector}}, Akagari ka {{cell}}.",
   "update_failed": "Kuhindura amakuru byarananiranye. Ongera ugerageze.",
   "error_generic": "Habaye ikibazo kitari cyitezwe. Ongera ugerageze nyuma.",
-  "back_to_main_menu": "Subira ahabanza"
+  "back_to_main_menu": "Subira ahabanza",
+  "prompt_service_type": "Hitamo ubwoko bwa serivisi:\n1. Ubuhinzi\n2. Ubuvuzi bw'amatungo\n0. Subira ku Murongo Mukuru",
+  "invalid_service_type": "Ubwoko bwa serivisi si bwo. Hitamo muri ibi bihitamo:\n1. Ubuhinzi\n2. Ubuvuzi bw'amatungo\n0. Subira ku Murongo Mukuru",
+  "prompt_issue_description": "Saba ikibazo cyawe (ntikirenze inyuguti {{max}}):\n0. Subira ku Murongo Mukuru",
+  "invalid_description_input": "Ibisobanuro birebire cyangwa birimo ubusa. Ntibigomba kurenza inyuguti {{max}}.\nSaba ikibazo cyawe:\n0. Subira ku Murongo Mukuru",
+  "service_request_success": "Icyifuzo cyatanzwe! Impuguke {{graduateName}} izaguhamagara vuba. Nimero y'icyifuzo: {{requestId}}.",
+  "service_request_no_match": "Ntabwo twabashije kubona impuguke iboneka mu karere kawe ubu. Icyifuzo cyawe cyanditswe (ID: {{requestId}}), kandi tuzakumenyesha iyo impuguke ibonetse.",
+  "service_request_failed": "Gutanga icyifuzo byarananiranye. Ongera ugerageze nyuma.",
+  "farmer_not_registered": "Ugomba kuba waramaze kwiyandikisha kugirango usabe serivisi. Hitamo 1 Kwiyandikisha nka Muhinzi.\n0. Subira ku Murongo Mukuru",
+  "agronomy_service_name": "Ubuhinzi",
+  "veterinary_service_name": "Ubuvuzi bw'amatungo"
 }

@@ -17,6 +17,8 @@ const {
 const farmerService = require('./farmerService'); 
 const adminLocationService = require('./adminLocationService');
 
+// Add the missing constant
+const MAX_DESCRIPTION_LENGTH = 255; // or whatever value you need
 
 const sessions = {};
 
@@ -59,7 +61,22 @@ const getLanguageSelectionMenu = () => {
   return message;
 };
 
-//New and Updated Menu Functions
+// Move these functions outside of getDynamicMainMenu
+
+const getServiceTypeMenu = (locale) => {
+  const message = getTranslatedMessage('prompt_service_type', locale);
+  return message;
+};
+
+const getIssueDescriptionPrompt = (locale) => {
+  return getTranslatedMessage('prompt_issue_description', locale, { max: MAX_DESCRIPTION_LENGTH });
+};
+
+const getFarmerNotRegisteredMessage = (locale) => {
+  return getTranslatedMessage('farmer_not_registered', locale);
+};
+
+// New and Updated Menu Functions
 
 const getDynamicMainMenu = async (locale, phoneNumber) => {
   const farmer = await farmerService.findFarmerByPhoneNumber(phoneNumber);
@@ -110,13 +127,13 @@ const getDistrictsMenu = async (locale, provinceCode) => {
 
   let menu = getTranslatedMessage('prompt_district_selection', locale);
   districts.forEach((d, index) => {
-    menu += `\n${index + 1}. ${d.name}`; // Use d.name
+    menu += `\n${index + 1}. ${d.name}`;
   });
-  return { menu, data: districts }; // Return objects (with name and code)
+  return { menu, data: districts };
 };
 
 const getSectorsMenu = async (locale, districtCode) => {
-  const sectors = await adminLocationService.getSectors(districtCode); // Use new service
+  const sectors = await adminLocationService.getSectors(districtCode);
   
   if (!sectors || sectors.length === 0) {
     console.warn(`No sectors found for district code: ${districtCode}`);
@@ -125,14 +142,13 @@ const getSectorsMenu = async (locale, districtCode) => {
 
   let menu = getTranslatedMessage('prompt_sector_selection', locale);
   sectors.forEach((s, index) => {
-    menu += `\n${index + 1}. ${s.name}`; // Use s.name
+    menu += `\n${index + 1}. ${s.name}`;
   });
   return { menu, data: sectors }; 
 };
 
-
 const getCellsMenu = async (locale, sectorCode) => {
-  const cells = await adminLocationService.getCells(sectorCode); // Use new service
+  const cells = await adminLocationService.getCells(sectorCode);
   
   if (!cells || cells.length === 0) {
     console.warn(`No cells found for sector code: ${sectorCode}`);
@@ -141,11 +157,10 @@ const getCellsMenu = async (locale, sectorCode) => {
 
   let menu = getTranslatedMessage('prompt_cell_selection', locale);
   cells.forEach((c, index) => {
-    menu += `\n${index + 1}. ${c.name}`; // Use c.name
+    menu += `\n${index + 1}. ${c.name}`;
   });
   return { menu, data: cells }; 
 };
-
 
 const getFeatureComingSoonMessage = (locale, featureName) => {
   return getTranslatedMessage(
@@ -181,4 +196,7 @@ module.exports = {
   getFeatureComingSoonMessage,
   getAlreadyRegisteredMessage,
   getUpdateDetailsMenu,
+  getServiceTypeMenu,
+  getIssueDescriptionPrompt,
+  getFarmerNotRegisteredMessage,
 };

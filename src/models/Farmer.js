@@ -53,10 +53,9 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   Farmer.associate = (models) => {
-    // A farmer can have multiple service requests
     Farmer.hasMany(models.ServiceRequest, {
       foreignKey: 'farmer_id',
-      as: 'serviceRequests',
+      as: 'serviceRequests'
     });
   };
 

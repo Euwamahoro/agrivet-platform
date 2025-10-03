@@ -37,10 +37,9 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   Graduate.associate = (models) => {
-    // A graduate can handle multiple service requests
     Graduate.hasMany(models.ServiceRequest, {
       foreignKey: 'graduate_id',
-      as: 'serviceRequests'
+      as: 'assignedRequests'
     });
   };
 

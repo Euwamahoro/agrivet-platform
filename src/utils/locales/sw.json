@@ -29,5 +29,15 @@
   "update_location_success": "Mahali ulipo pamesasishwa kuwa Mkoa wa {{province}}, Wilaya ya {{district}}, Sekta ya {{sector}}, Seli ya {{cell}}.",
   "update_failed": "Imeshindwa kusasisha maelezo. Tafadhali jaribu tena.",
   "error_generic": "Hitilafu isiyotarajiwa imetokea. Tafadhali jaribu tena baadaye.",
-  "back_to_main_menu": "Rudi kwenye Menyu Kuu"
+  "back_to_main_menu": "Rudi kwenye Menyu Kuu",
+  "prompt_service_type": "Chagua aina ya huduma:\n1. Kilimo\n2. Huduma za Mifugo\n0. Rudi kwenye Menyu Kuu",
+  "invalid_service_type": "Aina ya huduma si sahihi. Tafadhali chagua kutoka kwa chaguzi:\n1. Kilimo\n2. Huduma za Mifugo\n0. Rudi kwenye Menyu Kuu",
+  "prompt_issue_description": "Eleza shida yako (upeo wa herufi {{max}}):\n0. Rudi kwenye Menyu Kuu",
+  "invalid_description_input": "Maelezo marefu sana au matupu. Upeo wa herufi {{max}}.\nEleza shida yako:\n0. Rudi kwenye Menyu Kuu",
+  "service_request_success": "Ombi limetumwa! Mtaalamu {{graduateName}} atawasiliana nawe hivi karibuni. Namba ya Ombi: {{requestId}}.",
+  "service_request_no_match": "Hatukuweza kupata mtaalamu anayepatikana katika eneo lako sasa hivi. Ombi lako limerekodiwa (ID: {{requestId}}), na tutakuarifu mtaalamu atakapopatikana.",
+  "service_request_failed": "Imeshindwa kutuma ombi. Tafadhali jaribu tena baadaye.",
+  "farmer_not_registered": "Lazima uwe umesajiliwa kuomba huduma. Chagua 1 Kusajili kama Mkulima.\n0. Rudi kwenye Menyu Kuu",
+  "agronomy_service_name": "Kilimo",
+  "veterinary_service_name": "Huduma za Mifugo"
 }

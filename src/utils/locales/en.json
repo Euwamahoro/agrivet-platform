@@ -29,5 +29,15 @@
   "update_location_success": "Your location has been updated to {{province}}, {{district}}, {{sector}}, {{cell}}.",
   "update_failed": "Failed to update details. Please try again.",
   "error_generic": "An unexpected error occurred. Please try again later.",
-  "back_to_main_menu": "Back to Main Menu"
+  "back_to_main_menu": "Back to Main Menu",
+  "prompt_service_type": "Select service type:\n1. Agronomy\n2. Veterinary\n0. Back to Main Menu",
+  "invalid_service_type": "Invalid service type. Please select from the options:\n1. Agronomy\n2. Veterinary\n0. Back to Main Menu",
+  "prompt_issue_description": "Describe your issue (max {{max}} chars):\n0. Back to Main Menu",
+  "invalid_description_input": "Description too long or empty. Max {{max}} characters.\nDescribe your issue:\n0. Back to Main Menu",
+  "service_request_success": "Request submitted! Expert {{graduateName}} will contact you shortly. Request ID: {{requestId}}.",
+  "service_request_no_match": "We couldn't find an available expert in your area right now. Your request has been logged (ID: {{requestId}}), and we will notify you when an expert becomes available.",
+  "service_request_failed": "Failed to submit request. Please try again later.",
+  "farmer_not_registered": "You must be registered to request a service. Select 1 to Register as Farmer.\n0. Back to Main Menu",
+  "agronomy_service_name": "Agronomy",
+  "veterinary_service_name": "Veterinary"
 }
