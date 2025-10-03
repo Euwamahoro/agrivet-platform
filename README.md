@@ -277,7 +277,7 @@ This table tracks all service requests made by farmers and their assignment to g
 
 #### Database Schema Diagram
 
-*[Insert your database schema diagram image here]*
+![Database Schema Diagram](./imgs/database-schema_diagram.png)
 
 *(Note: `PK` = Primary Key, `FK` = Foreign Key. `underscored` convention is used for database columns.)*
 
