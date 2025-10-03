@@ -275,6 +275,32 @@ This table tracks all service requests made by farmers and their assignment to g
 *   **`created_at` (TIMESTAMP, Not Null):** Timestamp of when the record was created.
 *   **`updated_at` (TIMESTAMP, Not Null):** Timestamp of the last update to the record.
 
+### C. System Architecture / Data Flow Diagram (Conceptual "Circuit Diagram")
+
+For a software product, a "circuit diagram" can be conceptualized as a **System Architecture Diagram** or a **Data Flow Diagram**, illustrating how different components of the AgriVet platform interact.
+
+The core of the current USSD system involves:
+
+1.  **End User (Farmer):** Interacts via a feature phone.
+2.  **Mobile Network Operator (MNO) USSD Gateway:** Intercepts USSD dial codes (`*XXX#`) and translates user inputs into HTTP POST requests.
+3.  **AgriVet Backend (Node.js/Express):**
+    *   Receives HTTP POST requests from the MNO Gateway at the `/ussd` endpoint.
+    *   **USSD Controller:** Orchestrates the session, determines the current state (e.g., language selection, farmer registration step), and processes user input.
+    *   **USSD Service:** Manages session state (in-memory cache for MVP), builds dynamic, internationalized menus, and formats responses for the MNO Gateway.
+    *   **Farmer Service:** Interacts with the database for farmer registration and retrieval.
+    *   **Admin Location Service:** Makes external HTTP GET requests to the Intellex API to fetch hierarchical administrative divisions (Provinces, Districts, Sectors, Cells).
+    *   **Graduate Service:** Finds available graduates based on service type and farmer's registered location (utilizing database queries).
+    *   **Service Request Service:** Creates and manages service request records in the database.
+4.  **Intellex Administrative Locations API:** An external RESTful API providing accurate and hierarchical administrative data for Rwanda.
+5.  **PostgreSQL Database (with PostGIS):** Stores all persistent application data, including:
+    *   `farmers` (with administrative location details).
+    *   `graduates` (with administrative location details and PostGIS `GEOMETRY` points).
+    *   `service_requests` (linking farmers to assigned graduates and service details).
+
+**Conceptual Data Flow:**
+
+[Circuit Diagram](./imgs/flowchart.png)
+
 #### Database Schema Diagram
 
 ![Database Schema Diagram](./imgs/database-schema_diagram.png)
