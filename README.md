@@ -246,19 +246,101 @@ This table tracks all service requests made by farmers and their assignment to g
 
 **Database Schema Diagram (Conceptual):**
 
-+------------+        +-----------------+        +--------------------+
-|  farmers   |        |    graduates    |        |  service_requests  |
-+------------+        +-----------------+        +--------------------+
-| id (PK)    | <------| id (PK)         | <------| id (PK)            |
-| phone_num  |        | phone_num       |        | farmer_id (FK) ----+
-| name       |        | name            |        | graduate_id (FK) --+
-| province   |        | expertise       |        | service_type       |
-| district   |        | location (Point)|        | description        |
-| sector     |        | is_available    |        | status             |
-| cell       |        | province        |        | created_at         |
-| loc_text   |        | district        |        | updated_at         |
-| created_at |        | sector          |        |                    |
-| updated_at |        | cell            |        |                    |
-+------------+        | created_at      |        |                    |
-                        | updated_at      |        |                    |
-                        +-----------------+        +--------------------+
+*(Note: `PK` = Primary Key, `FK` = Foreign Key. `underscored` convention is used for database columns.)*
+
+### D. Server-side Code Snippets (Node.js/Express)
+
+The backend of the AgriVet platform, currently driving the USSD system, is built using **Node.js with the Express.js framework**. It encapsulates core business logic, handles interactions with the PostgreSQL database (enhanced with PostGIS), and integrates with external APIs for administrative data.
+
+**API Endpoints (USSD Gateway Integration):**
+The primary API endpoint handles all incoming USSD requests from the mobile network operator's gateway, delegating to `ussdController.handleUssdRequest`.
+```javascript
+// src/routes/ussdRoutes.js
+const express = require('express');
+const router = express.Router();
+const ussdController = require('../controllers/ussdController');
+
+router.post('/ussd', ussdController.handleUssdRequest);
+
+module.exports = router;
+
+Core USSD Request Handling Logic:
+The ussdController acts as the orchestrator, interpreting user input and current session state to determine the next action, dynamically controlling the user journey.
+code
+JavaScript
+Database Interactions (Farmer Service):
+The farmerService handles all CRUD operations related to farmer data, abstracting database queries using Sequelize.
+code
+JavaScript
+// src/services/farmerService.js
+const { Farmer } = require('../models');
+
+const findFarmerByPhoneNumber = async (phoneNumber) => {
+  return Farmer.findOne({ where: { phoneNumber } });
+};
+
+const registerFarmer = async (phoneNumber, name, province, district, sector, cell) => {
+  return Farmer.create({ phoneNumber, name, province, district, sector, cell });
+};
+
+// ... (other functions like updateFarmer) ...
+External API Integration (Administrative Location Service):
+The adminLocationService is responsible for fetching hierarchical administrative data from the Intellex API.```javascript
+// src/services/adminLocationService.js (Simplified snippet)
+const axios = require('axios');
+const config = require('../config');
+const { INTELLEX_API_BASE_URL, INTELLEX_DISTRICTS_GUID, INTELLEX_COUNTRY_CODE } = require('../utils/constants');
+const getApiHeaders = (apiKey, parentCode = null, type = 'Province') => {
+const headers = { 'api-key': apiKey, 'Countrycode': INTELLEX_COUNTRY_CODE };
+if (parentCode) {
+if (type === 'District') headers['Provincecode'] = parentCode;
+// ... for Sectorcode, Cellcode ...
+}
+return headers;
+};
+const fetchData = async (guid, apiKey, type, parentCode = null) => {
+// ... (cache logic) ...
+const response = await axios.get(${INTELLEX_API_BASE_URL}${guid}, { headers: getApiHeaders(apiKey, parentCode, type) });
+return response.data.data.filter(item => item.name !== 'Diaspora'); // Basic filtering and return
+};
+const getDistricts = async (provinceCode) => {
+return fetchData(INTELLEX_DISTRICTS_GUID, config.intellexApi.districtsKey, 'District', provinceCode);
+};
+// ... (getSectors, getCells) ...
+code
+Code
+**Planned Web Application Backend:**
+The backend for the future web application will extend this existing Node.js/Express infrastructure. It will involve new API endpoints for graduate registration (including qualification uploads), admin dashboards, managing service requests (CRUD operations), authentication/authorization (e.g., JWT), file upload handling, and payment gateway integration.
+
+## 5. Deployment Plan
+
+For the initial development and testing of the AgriVet USSD system, the application is currently hosted on a **local server**. This environment allows for rapid iteration and debugging.
+
+**Planned Production Deployment Infrastructure (Microsoft Azure):**
+
+For production deployment, leveraging our **Microsoft Azure free subscription**, the AgriVet platform will be hosted on Azure. Azure offers a comprehensive suite of services that perfectly match the requirements for scalability, reliability, and security of our Node.js backend and PostgreSQL database.
+
+*   **Application Hosting (Backend - USSD & Web API):**
+    *   **Azure App Service:** An excellent choice for hosting Node.js applications. It provides automatic scaling, built-in deployment slots, continuous deployment from GitHub, and seamless integration with other Azure services. It simplifies the management of the web server for both the USSD gateway callbacks and any future web API endpoints.
+    *   *Azure Container Apps / Azure Kubernetes Service (AKS):* Considered for future microservices architectures or if advanced container orchestration is needed. For this initial MVP, App Service is generally sufficient and simpler.
+*   **Database Hosting:**
+    *   **Azure Database for PostgreSQL - Flexible Server:** A fully managed PostgreSQL service that offers high availability, automated backups, patching, and scalability. It fully supports the PostGIS extension, which is critical for our geospatial matching capabilities.
+*   **USSD Gateway Integration:**
+    *   The application will integrate with Mobile Network Operators (MNOs) in Rwanda (e.g., MTN, Airtel) via their **USSD Gateway APIs**. This typically involves the MNO sending HTTP POST requests to a public endpoint of our deployed Azure App Service (e.g., `https://agrivet-ussd-app.azurewebsites.net/ussd`). This public URL will be configured with the MNO.
+*   **Static Assets/Frontend Hosting (for Web App):**
+    *   **Azure Static Web Apps:** An ideal service for hosting static frontend applications (like our planned React/TypeScript frontend). It provides global distribution, free SSL, and streamlined CI/CD.
+    *   *Azure Blob Storage + Azure CDN:* For hosting static content with content delivery network acceleration, if more granular control is needed.
+*   **Security & Management:**
+    *   **Azure Key Vault:** For securely storing API keys, database credentials, and other sensitive environment variables. This prevents sensitive information from being exposed in code or configuration files.
+    *   **Azure Active Directory / Microsoft Entra ID:** For identity and access management for admin and graduate users of the web app.
+    *   **Azure Virtual Networks:** For creating secure network environments and isolating resources.
+*   **Monitoring & Logging:**
+    *   **Azure Monitor & Azure Application Insights:** For comprehensive application performance monitoring, logging, and diagnostics.
+
+## 6. Video Demo Link
+
+[**Insert Link to Your 5-10 Minute Video Demonstration Here**]
+
+## 7. Code Files
+
+All relevant code files are organized within the `agrivet-ussd/src` directory, with database migrations in `agrivet-ussd/db`. The project adheres to the structure outlined in this README.
