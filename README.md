@@ -484,8 +484,7 @@ For production deployment, leveraging our **Microsoft Azure free subscription**,
 
 ## 6. Video Demo Link
 
-*[Insert link to your 5-10 minute video demonstration here]*
-
+![Agrivet-USSD-Demo](https://somup.com/cT6eFVPas1)
 ## 7. Code Files
 
 All relevant code files are organized within the `agrivet-ussd/src` directory, with database migrations in `agrivet-ussd/db`. The project adheres to the structure outlined in this README.
@@ -516,11 +515,3 @@ agrivet-ussd/
 ## Contributing
 
 We welcome contributions to the AgriVet platform! Please feel free to submit issues, fork the repository, and create pull requests for any improvements.
-
-## License
-
-*[Specify your license here]*
-
-## Contact
-
-For questions or support, please contact *[your contact information]*.
