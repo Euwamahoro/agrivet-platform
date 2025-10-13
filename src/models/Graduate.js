@@ -21,6 +21,24 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.ENUM('agronomy', 'veterinary', 'both'),
         allowNull: false,
       },
+      // NEW: Add location administrative fields for filtering
+      province: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      district: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      sector: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      cell: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      // PostGIS location for spatial queries
       location: {
         type: DataTypes.GEOMETRY('Point', 4326),
         allowNull: false,
@@ -30,9 +48,23 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: true,
         field: 'is_available'
       },
+      // NEW: Explicit timestamp fields with correct mapping
+      createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+        field: 'created_at'
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+        field: 'updated_at'
+      },
     },
     {
       tableName: 'graduates',
+      underscored: true,
     }
   );
 
