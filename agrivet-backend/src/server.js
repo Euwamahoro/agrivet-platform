@@ -60,6 +60,37 @@ try {
   console.error('❌ Failed to load service request routes:', error.message);
 }
 
+// NEW: Sync routes
+try {
+  console.log('🔄 Loading sync routes...');
+  const syncRoutes = require('./routes/sync');
+  app.use('/api/sync', syncRoutes);
+  console.log('✅ Sync routes mounted successfully');
+} catch (error) {
+  console.error('❌ Failed to load sync routes:', error.message);
+}
+
+// NEW: Test sync endpoint (temporary for testing)
+app.get('/api/test-sync', async (req, res) => {
+  try {
+    console.log('🔄 Manual sync triggered via test endpoint');
+    const syncService = require('./services/syncService');
+    const result = await syncService.syncFromUSSDToWeb();
+    
+    res.json({ 
+      success: true, 
+      message: 'Sync completed successfully',
+      result 
+    });
+  } catch (error) {
+    console.error('❌ Sync test failed:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Health check route
 app.get('/api/health', (req, res) => {
   console.log('✅ Health check called');
@@ -98,6 +129,7 @@ app.listen(PORT, () => {
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🔗 Test login: POST http://localhost:${PORT}/api/test-login`);
+  console.log(`🔗 Test sync: GET http://localhost:${PORT}/api/test-sync`); // NEW
 });
 
 module.exports = app;

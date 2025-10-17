@@ -1,12 +1,11 @@
 // src/pages/AdminDashboard.tsx
 import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '../store';
 import { getPlatformStats, PlatformStats } from '../services/adminServices';
 
 const AdminDashboard: React.FC = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -52,6 +51,8 @@ const AdminDashboard: React.FC = () => {
   ]);
 
   const [loading, setLoading] = useState(true);
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
 
   useEffect(() => {
     fetchPlatformStats();
@@ -68,6 +69,31 @@ const AdminDashboard: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const syncUSSDData = async () => {
+  try {
+    setSyncLoading(true);
+    setSyncMessage('🔄 Syncing data from USSD...');
+    
+    // Use full backend URL with port 5000
+    const response = await fetch('http://localhost:5000/api/test-sync');
+    const result = await response.json();
+    
+    if (result.success) {
+      setSyncMessage('✅ Sync successful! Data loaded from USSD.');
+      await fetchPlatformStats();
+    } else {
+      setSyncMessage(`❌ Sync failed: ${result.error}`);
+    }
+  } catch (error) {
+    console.error('Sync failed:', error);
+    const message = error instanceof Error ? error.message : String(error);
+    setSyncMessage(`❌ Sync failed: ${message}`);
+  } finally {
+    setSyncLoading(false);
+    setTimeout(() => setSyncMessage(''), 5000);
+  }
+};
 
   if (loading) {
     return (
@@ -98,6 +124,17 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Sync Status Message */}
+      {syncMessage && (
+        <div className={`p-4 rounded-lg ${
+          syncMessage.includes('✅') 
+            ? 'bg-green-100 border border-green-400 text-green-700'
+            : 'bg-red-100 border border-red-400 text-red-700'
+        }`}>
+          {syncMessage}
+        </div>
+      )}
 
       {/* Platform Statistics */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -362,13 +399,22 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Refresh Button */}
-      <div className="flex justify-center">
+      {/* Action Buttons */}
+      <div className="flex justify-center space-x-4">
         <button
           onClick={fetchPlatformStats}
           className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
         >
           Refresh Dashboard
+        </button>
+        
+        {/* NEW: Sync USSD Data Button */}
+        <button
+          onClick={syncUSSDData}
+          disabled={syncLoading}
+          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+        >
+          {syncLoading ? '🔄 Syncing...' : '🔄 Sync USSD Data'}
         </button>
       </div>
     </div>

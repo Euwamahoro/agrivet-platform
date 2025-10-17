@@ -16,6 +16,7 @@ const ServiceRequestsAdmin: React.FC = () => {
     try {
       setLoading(true);
       const data = await getServiceRequests(filterStatus, currentPage);
+      console.log('Fetched requests:', data.requests); // Debug log
       setRequests(data.requests);
       setTotalPages(data.totalPages);
     } catch (error) {
@@ -105,28 +106,32 @@ const ServiceRequestsAdmin: React.FC = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
-                    {request.farmer.user.name}
+                    {/* FIXED: Use nested farmer.user fields */}
+                    {request.farmer?.user?.name || 'Unknown Farmer'}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {request.farmer.user.phoneNumber}
+                    {/* FIXED: Use nested farmer.user phoneNumber field */}
+                    {request.farmer?.user?.phoneNumber || 'No Phone'}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
-                    {request.location.district}
+                    {/* FIXED: Safe access to location */}
+                    {request.location?.district || 'Unknown District'}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {request.location.sector}
+                    {request.location?.sector || 'Unknown Sector'}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {request.graduate ? (
                     <>
                       <div className="text-sm text-gray-900">
-                        {request.graduate.user.name}
+                        {/* FIXED: Use nested graduate.user.name */}
+                        {request.graduate?.user?.name || 'Unknown Graduate'}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {request.graduate.expertise}
+                        {request.graduate?.expertise || 'No Expertise'}
                       </div>
                     </>
                   ) : (
