@@ -64,4 +64,4 @@ serviceRequestSchema.index({ graduate: 1, status: 1 });
 serviceRequestSchema.index({ status: 1, serviceType: 1 });
 serviceRequestSchema.index({ 'location.district': 1, 'location.sector': 1 });
 
-module.exports = mongoose.model('ServiceRequest', serviceRequestSchema);
+module.exports = mongoose.models.ServiceRequest || mongoose.model('ServiceRequest', serviceRequestSchema);

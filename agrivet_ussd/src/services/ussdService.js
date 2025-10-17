@@ -83,15 +83,9 @@ const getDynamicMainMenu = async (locale, phoneNumber) => {
   let mainMenuItem1;
 
   if (farmer) {
-    mainMenuItem1 = getTranslatedMessage(
-      'menu_option_update_details',
-      locale
-    ); 
+    mainMenuItem1 = `${getTranslatedMessage('menu_option_update_details', locale)}`
   } else {
-    mainMenuItem1 = getTranslatedMessage(
-      'menu_option_register_farmer',
-      locale
-    ); 
+    mainMenuItem1 = `${getTranslatedMessage('menu_option_register_farmer', locale)}`;
   }
 
   const message =

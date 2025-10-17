@@ -1,7 +1,7 @@
 const ussdService = require('../services/ussdService');
 const farmerService = require('../services/farmerService');
-const serviceRequestService = require('../services/serviceRequestService'); // NEW: Import serviceRequestService
-const graduateService = require('../services/graduateService'); // NEW: Import graduateService
+const serviceRequestService = require('../services/serviceRequestService');
+const graduateService = require('../services/graduateService');
 
 const {
   USSD_CONTINUE,
@@ -15,8 +15,8 @@ const {
   STATE_FARMER_REG_SECTOR,
   STATE_FARMER_REG_CELL,
   STATE_FARMER_UPDATE_MENU,
-  STATE_REQUEST_SERVICE_TYPE, // NEW
-  STATE_REQUEST_DESCRIPTION,  // NEW
+  STATE_REQUEST_SERVICE_TYPE,
+  STATE_REQUEST_DESCRIPTION,
   LANG_EN_OPTION,
   LANG_RW_OPTION,
   LANG_SW_OPTION,
@@ -30,11 +30,11 @@ const {
   MENU_OPTION_EXIT,
   NAV_BACK_TO_MAIN_MENU,
   MAX_NAME_LENGTH,
-  MAX_DESCRIPTION_LENGTH, // NEW
+  MAX_DESCRIPTION_LENGTH,
   MENU_OPTION_UPDATE_DETAILS,
-  SERVICE_TYPE_AGRONOMY, // NEW
-  SERVICE_TYPE_VETERINARY, // NEW
-  REQUEST_STATUS_NO_MATCH // NEW
+  SERVICE_TYPE_AGRONOMY,
+  SERVICE_TYPE_VETERINARY,
+  REQUEST_STATUS_NO_MATCH
 } = require('../utils/constants');
 
 const handleUssdRequest = async (req, res) => {
@@ -48,7 +48,7 @@ const handleUssdRequest = async (req, res) => {
   try {
     const input = text.split('*').pop();
 
-    // Initial dial or language selection flow (remains largely same from Phase 2)
+    // Initial dial or language selection flow
     if (text === '') {
       response = ussdService.getLanguageSelectionMenu();
       ussdService.updateSession(sessionId, { state: STATE_LANGUAGE_SELECTION });
@@ -75,17 +75,20 @@ const handleUssdRequest = async (req, res) => {
       currentLanguage = session.language;
       const farmer = await farmerService.findFarmerByPhoneNumber(phoneNumber);
 
+      console.log(`DEBUG: Main menu input: "${input}", Farmer exists: ${!!farmer}`);
+
       if (input === MENU_OPTION_REGISTER_FARMER && !farmer) {
+        console.log('DEBUG: Taking registration path');
         ussdService.updateSession(sessionId, { state: STATE_FARMER_REG_NAME, farmerRegData: {} });
         response = ussdService.getFarmerNamePrompt(currentLanguage);
       } else if (input === MENU_OPTION_UPDATE_DETAILS && farmer) {
+        console.log('DEBUG: Taking update path');
         ussdService.updateSession(sessionId, { state: STATE_FARMER_UPDATE_MENU });
         response = ussdService.getUpdateDetailsMenu(currentLanguage);
       } else if (input === MENU_OPTION_REQUEST_SERVICE) {
-        // NEW: Request Service initiation
         if (!farmer) {
           response = ussdService.getFarmerNotRegisteredMessage(currentLanguage);
-          ussdService.updateSession(sessionId, { state: STATE_SUB_MENU_ACK }); // Acknowledge, then back to main
+          ussdService.updateSession(sessionId, { state: STATE_SUB_MENU_ACK });
         } else {
           ussdService.updateSession(sessionId, { state: STATE_REQUEST_SERVICE_TYPE, serviceRequestData: {} });
           response = ussdService.getServiceTypeMenu(currentLanguage);
@@ -108,7 +111,7 @@ const handleUssdRequest = async (req, res) => {
         response += `\n${await ussdService.getDynamicMainMenu(currentLanguage, phoneNumber)}`;
       }
     } 
-    // Farmer Registration Flow (from Phase 3 - remains largely same)
+    // Farmer Registration Flow
     else if (session.state === STATE_FARMER_REG_NAME) {
       if (input.length > 0 && input.length <= MAX_NAME_LENGTH) {
         ussdService.updateSession(sessionId, {
@@ -216,27 +219,56 @@ const handleUssdRequest = async (req, res) => {
           locationText: `${session.farmerRegData.province}, ${session.farmerRegData.district}, ${session.farmerRegData.sector}, ${selectedCell.name}`,
         };
 
-        const registeredFarmer = await farmerService.registerFarmer(
-          farmerData.phoneNumber,
-          farmerData.name,
-          farmerData.province,
-          farmerData.district,
-          farmerData.sector,
-          farmerData.cell
-        );
-
-        if (registeredFarmer) {
-          response = ussdService.getTranslatedMessage('farmer_registration_success', currentLanguage, {
+        // CHECK IF THIS IS AN UPDATE OR NEW REGISTRATION
+        const existingFarmer = await farmerService.findFarmerByPhoneNumber(phoneNumber);
+        
+        let result;
+        let isUpdate = false;
+        
+        if (existingFarmer) {
+          // UPDATE EXISTING FARMER
+          console.log('DEBUG: Updating existing farmer');
+          isUpdate = true;
+          result = await farmerService.updateFarmer(phoneNumber, {
             name: farmerData.name,
             province: farmerData.province,
             district: farmerData.district,
             sector: farmerData.sector,
             cell: farmerData.cell,
+            locationText: farmerData.locationText
           });
+        } else {
+          // REGISTER NEW FARMER
+          console.log('DEBUG: Registering new farmer');
+          result = await farmerService.registerFarmer(
+            farmerData.phoneNumber,
+            farmerData.name,
+            farmerData.province,
+            farmerData.district,
+            farmerData.sector,
+            farmerData.cell
+          );
+        }
+
+        if (result) {
+          response = ussdService.getTranslatedMessage(
+            isUpdate ? 'farmer_update_success' : 'farmer_registration_success', 
+            currentLanguage, 
+            {
+              name: farmerData.name,
+              province: farmerData.province,
+              district: farmerData.district,
+              sector: farmerData.sector,
+              cell: farmerData.cell,
+            }
+          );
           responseType = USSD_END;
           ussdService.clearSession(sessionId);
         } else {
-          response = ussdService.getTranslatedMessage('farmer_registration_failed', currentLanguage);
+          response = ussdService.getTranslatedMessage(
+            isUpdate ? 'farmer_update_failed' : 'farmer_registration_failed', 
+            currentLanguage
+          );
           responseType = USSD_END;
           ussdService.clearSession(sessionId);
         }
@@ -252,7 +284,7 @@ const handleUssdRequest = async (req, res) => {
         response += `\n${menu}`;
       }
     }
-    // Acknowledge Sub-Menu (e.g., "coming soon" messages)
+    // Acknowledge Sub-Menu
     else if (session.state === STATE_SUB_MENU_ACK) {
       if (input === NAV_BACK_TO_MAIN_MENU) {
         ussdService.updateSession(sessionId, { state: STATE_MAIN_MENU });
@@ -263,7 +295,7 @@ const handleUssdRequest = async (req, res) => {
         ussdService.updateSession(sessionId, { state: STATE_MAIN_MENU });
       }
     }
-    // Update Farmer Details Flow (from Phase 3 - remains largely same)
+    // Update Farmer Details Flow
     else if (session.state === STATE_FARMER_UPDATE_MENU) {
       const farmer = await farmerService.findFarmerByPhoneNumber(phoneNumber);
       if (!farmer) {
@@ -273,13 +305,13 @@ const handleUssdRequest = async (req, res) => {
       } else if (input === '1') { // Update Name
         ussdService.updateSession(sessionId, { state: STATE_FARMER_REG_NAME, farmerRegData: { name: farmer.name } });
         response = ussdService.getFarmerNamePrompt(currentLanguage);
-      } else if (input === '2') { // Update Location (re-use the full location flow)
+      } else if (input === '2') { // Update Location
         ussdService.updateSession(sessionId, {
           state: STATE_FARMER_REG_PROVINCE,
           farmerRegData: {
             name: farmer.name,
             province: farmer.province,
-            provinceCode: farmer.provinceCode, // Assumed to be in DB for update
+            provinceCode: farmer.provinceCode,
             district: farmer.district,
             districtCode: farmer.districtCode,
             sector: farmer.sector,
@@ -297,7 +329,7 @@ const handleUssdRequest = async (req, res) => {
         response += `\n${ussdService.getUpdateDetailsMenu(currentLanguage)}`;
       }
     }
-    // NEW: Service Request Flow
+    // Service Request Flow
     else if (session.state === STATE_REQUEST_SERVICE_TYPE) {
       const selectedServiceTypeOption = input;
       let serviceType;
@@ -333,7 +365,6 @@ const handleUssdRequest = async (req, res) => {
 
       const farmer = await farmerService.findFarmerByPhoneNumber(phoneNumber);
       if (!farmer) {
-        // This state should only be reached by registered farmers, but fallback for safety
         response = ussdService.getTranslatedMessage('farmer_not_registered', currentLanguage);
         responseType = USSD_END;
         ussdService.clearSession(sessionId);
@@ -343,7 +374,6 @@ const handleUssdRequest = async (req, res) => {
       const serviceType = session.serviceRequestData.serviceType;
       const description = input;
 
-      // Prepare farmer's location for graduate matching
       const farmerLocation = {
         province: farmer.province,
         district: farmer.district,
@@ -352,13 +382,13 @@ const handleUssdRequest = async (req, res) => {
       };
 
       let assignedGraduate = null;
-      let requestStatus = REQUEST_STATUS_NO_MATCH; // Default to no match
+      let requestStatus = REQUEST_STATUS_NO_MATCH;
 
       try {
         assignedGraduate = await graduateService.findAvailableGraduates(farmerLocation, serviceType);
 
         if (assignedGraduate) {
-          requestStatus = 'assigned'; // Assuming 'assigned' is the status for a successful match
+          requestStatus = 'assigned';
           const serviceRequest = await serviceRequestService.createServiceRequest(
             farmer.id,
             assignedGraduate.id,
@@ -368,22 +398,21 @@ const handleUssdRequest = async (req, res) => {
           );
           response = ussdService.getTranslatedMessage('service_request_success', currentLanguage, {
             graduateName: assignedGraduate.name,
-            requestId: serviceRequest.id.substring(0, 8), // Shorten ID for USSD display
+            requestId: serviceRequest.id.substring(0, 8),
           });
         } else {
-          // No graduate found, but log the request
           const serviceRequest = await serviceRequestService.createServiceRequest(
             farmer.id,
-            null, // No graduate assigned
+            null,
             serviceType,
             description,
             REQUEST_STATUS_NO_MATCH
           );
           response = ussdService.getTranslatedMessage('service_request_no_match', currentLanguage, {
-            requestId: serviceRequest.id.substring(0, 8), // Shorten ID for USSD display
+            requestId: serviceRequest.id.substring(0, 8),
           });
         }
-        responseType = USSD_END; // End session after request submission
+        responseType = USSD_END;
         ussdService.clearSession(sessionId);
       } catch (matchError) {
         console.error(`Error during graduate matching or request creation for session ${sessionId}:`, matchError);

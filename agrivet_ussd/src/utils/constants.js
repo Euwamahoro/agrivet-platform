@@ -43,12 +43,12 @@ module.exports = {
 
   // Other constants
   MAX_NAME_LENGTH: 50,
-  MAX_DESCRIPTION_LENGTH: 160, // SMS character limit consideration
+  MAX_DESCRIPTION_LENGTH: 160,
 
   // NEW SERVICE TYPES
   SERVICE_TYPE_AGRONOMY: 'agronomy',
   SERVICE_TYPE_VETERINARY: 'veterinary',
-  SERVICE_TYPE_BOTH: 'both', // For graduates with dual expertise
+  SERVICE_TYPE_BOTH: 'both',
 
   // NEW SERVICE STATUSES
   REQUEST_STATUS_PENDING: 'pending',

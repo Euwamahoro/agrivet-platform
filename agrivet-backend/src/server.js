@@ -70,6 +70,8 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.use('/api/admin', require('./routes/admin'));
+
 // 404 handler
 app.use('*', (req, res) => {
   console.log('❌ 404 - Route not found:', req.originalUrl);
