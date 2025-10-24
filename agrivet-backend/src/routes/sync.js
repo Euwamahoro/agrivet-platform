@@ -1,7 +1,7 @@
 // src/routes/sync.js - UPDATED FILE
 const express = require('express');
 const Farmer = require('../models/Farmer');
-const ServiceRequest = require('../models/ServiceRequest');
+const ServiceRequest = require('../models/serviceRequest');
 const Graduate = require('../models/Graduate');
 
 const router = express.Router();
