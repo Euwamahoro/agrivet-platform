@@ -75,6 +75,13 @@ const getIssueDescriptionPrompt = (locale) => {
 const getFarmerNotRegisteredMessage = (locale) => {
   return getTranslatedMessage('farmer_not_registered', locale);
 };
+const getWeatherInfoPrompt = (locale) => {
+  return getTranslatedMessage('weather_info_loading', locale);
+};
+
+const getFarmingTipsMenu = (locale) => {
+  return getTranslatedMessage('farming_tips_menu', locale);
+};
 
 // New and Updated Menu Functions
 
@@ -92,6 +99,8 @@ const getDynamicMainMenu = async (locale, phoneNumber) => {
     `${getTranslatedMessage('main_menu_welcome', locale)}\n` +
     `${mainMenuItem1}\n` +
     `${getTranslatedMessage('menu_option_request_service', locale)}\n` +
+    `${getTranslatedMessage('menu_option_weather_info', locale)}\n` +
+    `${getTranslatedMessage('menu_option_farming_tips', locale)}\n` +
     `${getTranslatedMessage('menu_option_my_request_status', locale)}\n` +
     `${getTranslatedMessage('menu_option_change_language', locale)}\n` +
     `${getTranslatedMessage('menu_option_exit', locale)}`;

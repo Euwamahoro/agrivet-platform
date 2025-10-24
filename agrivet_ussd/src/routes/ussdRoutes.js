@@ -3,6 +3,9 @@ const router = express.Router();
 const ussdController = require('../controllers/ussdController');
 const { Graduate, Farmer, ServiceRequest, sequelize } = require('../models');
 
+
+const weatherService = require('../services/weatherService');
+
 // The main endpoint for USSD gateway callbacks
 router.post('/ussd', ussdController.handleUssdRequest);
 

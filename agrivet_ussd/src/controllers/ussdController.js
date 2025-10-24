@@ -2,6 +2,7 @@ const ussdService = require('../services/ussdService');
 const farmerService = require('../services/farmerService');
 const serviceRequestService = require('../services/serviceRequestService');
 const graduateService = require('../services/graduateService');
+const weatherService = require('../services/weatherService'); // ADD THIS
 
 const {
   USSD_CONTINUE,
@@ -17,6 +18,8 @@ const {
   STATE_FARMER_UPDATE_MENU,
   STATE_REQUEST_SERVICE_TYPE,
   STATE_REQUEST_DESCRIPTION,
+  STATE_WEATHER_INFO, // ADD THIS
+  STATE_FARMING_TIPS, // ADD THIS
   LANG_EN_OPTION,
   LANG_RW_OPTION,
   LANG_SW_OPTION,
@@ -28,6 +31,8 @@ const {
   MENU_OPTION_MY_REQUEST_STATUS,
   MENU_OPTION_CHANGE_LANGUAGE,
   MENU_OPTION_EXIT,
+  MENU_OPTION_WEATHER_INFO, // ADD THIS
+  MENU_OPTION_FARMING_TIPS, // ADD THIS
   NAV_BACK_TO_MAIN_MENU,
   MAX_NAME_LENGTH,
   MAX_DESCRIPTION_LENGTH,
@@ -93,6 +98,17 @@ const handleUssdRequest = async (req, res) => {
           ussdService.updateSession(sessionId, { state: STATE_REQUEST_SERVICE_TYPE, serviceRequestData: {} });
           response = ussdService.getServiceTypeMenu(currentLanguage);
         }
+      } else if (input === MENU_OPTION_WEATHER_INFO) { // NEW WEATHER OPTION
+        if (!farmer) {
+          response = ussdService.getFarmerNotRegisteredMessage(currentLanguage);
+          ussdService.updateSession(sessionId, { state: STATE_SUB_MENU_ACK });
+        } else {
+          ussdService.updateSession(sessionId, { state: STATE_WEATHER_INFO });
+          response = ussdService.getWeatherInfoPrompt(currentLanguage);
+        }
+      } else if (input === MENU_OPTION_FARMING_TIPS) { // NEW FARMING TIPS OPTION
+        ussdService.updateSession(sessionId, { state: STATE_FARMING_TIPS });
+        response = ussdService.getFarmingTipsMenu(currentLanguage);
       } else if (input === MENU_OPTION_MY_REQUEST_STATUS) {
         response = ussdService.getFeatureComingSoonMessage(
           currentLanguage,
@@ -419,6 +435,51 @@ const handleUssdRequest = async (req, res) => {
         response = ussdService.getTranslatedMessage('service_request_failed', currentLanguage);
         responseType = USSD_END;
         ussdService.clearSession(sessionId);
+      }
+    }
+    // Weather Information Flow - NEW
+    else if (session.state === STATE_WEATHER_INFO) {
+      try {
+        console.log(`🌤️ Getting weather for farmer: ${phoneNumber}`);
+        const weatherInfo = await weatherService.getWeatherForFarmer(phoneNumber);
+        if (weatherInfo) {
+          response = weatherInfo;
+        } else {
+          response = ussdService.getTranslatedMessage('weather_info_unavailable', currentLanguage);
+        }
+        responseType = USSD_END;
+        ussdService.clearSession(sessionId);
+      } catch (error) {
+        console.error('Weather service error:', error);
+        response = ussdService.getTranslatedMessage('weather_service_error', currentLanguage);
+        responseType = USSD_END;
+        ussdService.clearSession(sessionId);
+      }
+    }
+    // Farming Tips Flow - NEW
+    else if (session.state === STATE_FARMING_TIPS) {
+      if (input === NAV_BACK_TO_MAIN_MENU) {
+        ussdService.updateSession(sessionId, { state: STATE_MAIN_MENU });
+        response = await ussdService.getDynamicMainMenu(currentLanguage, phoneNumber);
+      } else if (input === '1') {
+        response = ussdService.getTranslatedMessage('farming_tip_maize', currentLanguage);
+        responseType = USSD_END;
+        ussdService.clearSession(sessionId);
+      } else if (input === '2') {
+        response = ussdService.getTranslatedMessage('farming_tip_beans', currentLanguage);
+        responseType = USSD_END;
+        ussdService.clearSession(sessionId);
+      } else if (input === '3') {
+        response = ussdService.getTranslatedMessage('farming_tip_soil', currentLanguage);
+        responseType = USSD_END;
+        ussdService.clearSession(sessionId);
+      } else if (input === '4') {
+        response = ussdService.getTranslatedMessage('farming_tip_livestock', currentLanguage);
+        responseType = USSD_END;
+        ussdService.clearSession(sessionId);
+      } else {
+        response = ussdService.getTranslatedMessage('invalid_selection', currentLanguage);
+        response += `\n${ussdService.getFarmingTipsMenu(currentLanguage)}`;
       }
     }
 
