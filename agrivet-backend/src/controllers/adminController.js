@@ -2,7 +2,7 @@
 const User = require('../models/User');
 const Graduate = require('../models/Graduate');
 const Farmer = require('../models/Farmer');
-const ServiceRequest = require('../models/ServiceRequest');
+const ServiceRequest = require('../models/serviceRequest');
 
 exports.getPlatformStats = async (req, res) => {
   try {
