@@ -1,8 +1,9 @@
 // src/services/authService.ts
 import axios from 'axios';
-import { User, Graduate } from '../types';
+// Remove unused import - Graduate is not used
+import { User } from '../types';
 
-const API_BASE_URL ='http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -21,7 +22,8 @@ export const authService = {
     console.log('🔄 Sending login request:', credentials);
     
     try {
-      const response = await api.post('/auth/login', credentials);
+      // ADD /api to the path
+      const response = await api.post('/api/auth/login', credentials);
       console.log('✅ Login successful:', response.data);
       return response.data;
     } catch (error: any) {
@@ -30,16 +32,18 @@ export const authService = {
     }
   },
 
-registerAdmin: async (adminData: { phoneNumber: string; name: string; email?: string; password: string }) => {
-  const response = await api.post('/auth/register/admin', adminData);
-  return response.data;
-},
+  registerAdmin: async (adminData: { phoneNumber: string; name: string; email?: string; password: string }) => {
+    // ADD /api to the path
+    const response = await api.post('/api/auth/register/admin', adminData);
+    return response.data;
+  },
 
   registerGraduate: async (graduateData: any) => {
     console.log('🔄 Sending registration request:', graduateData);
     
     try {
-      const response = await api.post('/auth/register/graduate', graduateData);
+      // ADD /api to the path
+      const response = await api.post('/api/auth/register/graduate', graduateData);
       console.log('✅ Registration successful:', response.data);
       return response.data;
     } catch (error: any) {
@@ -49,7 +53,8 @@ registerAdmin: async (adminData: { phoneNumber: string; name: string; email?: st
   },
 
   getCurrentUser: async (): Promise<User> => {
-    const response = await api.get('/auth/me');
+    // ADD /api to the path
+    const response = await api.get('/api/auth/me');
     return response.data;
   },
 };
