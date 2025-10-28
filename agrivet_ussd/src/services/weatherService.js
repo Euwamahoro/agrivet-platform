@@ -1,6 +1,6 @@
 const axios = require('axios');
 const geocodingService = require('./geoCodingService');
-const { Farmer } = require('../models'); // Make sure this path matches your models
+const { Farmer } = require('../models');
 
 class WeatherService {
   constructor() {
