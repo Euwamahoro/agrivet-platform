@@ -18,16 +18,12 @@ api.interceptors.request.use((config) => {
 });
 
 export const authService = {
-  login: async (credentials: { phoneNumber: string; password: string }) => {
-    console.log('🔄 Sending login request:', credentials);
-    
+  login: async (credentials: { phoneNumber: string; password: string }) => {    
     try {
       // ADD /api to the path
       const response = await api.post('/api/auth/login', credentials);
-      console.log('✅ Login successful:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('❌ Login failed:', error.response?.data || error.message);
       throw error;
     }
   },
@@ -44,7 +40,6 @@ export const authService = {
     try {
       // ADD /api to the path
       const response = await api.post('/api/auth/register/graduate', graduateData);
-      console.log('✅ Registration successful:', response.data);
       return response.data;
     } catch (error: any) {
       console.error('❌ Registration failed:', error.response?.data || error.message);
