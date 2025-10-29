@@ -13,7 +13,9 @@ module.exports = {
       ssl: {
         require: true,
         rejectUnauthorized: false
-      }
+      },
+      // Add statement_timeout to work with pooler
+      statement_timeout: 10000
     },
     logging: false, // Set to true to see SQL queries in console
     pool: {
@@ -21,7 +23,9 @@ module.exports = {
       min: 0,
       acquire: 30000,
       idle: 10000
-    }
+    },
+    // Disable prepared statements for pooler compatibility
+    native: false
   },
   // Add other configurations here as needed
 
