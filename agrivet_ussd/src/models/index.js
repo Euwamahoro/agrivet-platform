@@ -2,6 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const Sequelize = require('sequelize');
 const config = require('../config');
+const dns = require('dns');
+
+// Force IPv4 resolution
+dns.setDefaultResultOrder('ipv4first');
 
 const basename = path.basename(__filename);
 const db = {};
@@ -16,28 +20,9 @@ const sequelize = new Sequelize(
     dialect: config.db.dialect,
     dialectOptions: config.db.dialectOptions,
     logging: config.db.logging,
+    pool: config.db.pool,
   }
 );
-
-fs.readdirSync(__dirname)
-  .filter((file) => {
-    return (
-      file.indexOf('.') !== 0 && file !== basename && file.slice(-3) === '.js'
-    );
-  })
-  .forEach((file) => {
-    const model = require(path.join(__dirname, file))(
-      sequelize,
-      Sequelize.DataTypes
-    );
-    db[model.name] = model;
-  });
-
-Object.keys(db).forEach((modelName) => {
-  if (db[modelName].associate) {
-    db[modelName].associate(db);
-  }
-});
 
 fs.readdirSync(__dirname)
   .filter((file) => {
