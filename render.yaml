@@ -3,6 +3,7 @@ services:
     name: agrivet-ussd
     runtime: node
     plan: free
+    rootDir: agrivet_ussd
     buildCommand: npm install
     startCommand: npm start
     envVars:
