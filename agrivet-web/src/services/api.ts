@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'https://agrivet-backend.up.railway.app',
+  baseURL: process.env.REACT_APP_API_URL || 'https://agrivet.up.railway.app',
 });
 
 // Add token to requests
