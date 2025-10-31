@@ -1,27 +1,12 @@
-// src/services/authService.ts
-import axios from 'axios';
-// Remove unused import - Graduate is not used
+// src/services/authService.ts - FIXED VERSION
+import api from './api'; // ✅ Use the shared axios instance
 import { User } from '../types';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
 
 export const authService = {
   login: async (credentials: { phoneNumber: string; password: string }) => {    
     try {
-      // ADD /api to the path
-      const response = await api.post('/api/auth/login', credentials);
+      // ✅ FIXED: Removed /api prefix (it's in baseURL now)
+      const response = await api.post('/auth/login', credentials);
       return response.data;
     } catch (error: any) {
       throw error;
@@ -29,8 +14,8 @@ export const authService = {
   },
 
   registerAdmin: async (adminData: { phoneNumber: string; name: string; email?: string; password: string }) => {
-    // ADD /api to the path
-    const response = await api.post('/api/auth/register/admin', adminData);
+    // ✅ FIXED: Removed /api prefix
+    const response = await api.post('/auth/register/admin', adminData);
     return response.data;
   },
 
@@ -38,8 +23,8 @@ export const authService = {
     console.log('🔄 Sending registration request:', graduateData);
     
     try {
-      // ADD /api to the path
-      const response = await api.post('/api/auth/register/graduate', graduateData);
+      // ✅ FIXED: Removed /api prefix
+      const response = await api.post('/auth/register/graduate', graduateData);
       return response.data;
     } catch (error: any) {
       console.error('❌ Registration failed:', error.response?.data || error.message);
@@ -48,8 +33,8 @@ export const authService = {
   },
 
   getCurrentUser: async (): Promise<User> => {
-    // ADD /api to the path
-    const response = await api.get('/api/auth/me');
+    // ✅ FIXED: Removed /api prefix
+    const response = await api.get('/auth/me');
     return response.data;
   },
 };
