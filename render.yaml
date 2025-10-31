@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: agrivet-ussd
+    runtime: node
+    plan: free
+    rootDir: agrivet_ussd
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DB_HOST
+        value: aws-1-eu-north-1.pooler.supabase.com
+      - key: DB_PORT
+        value: 6543
+      - key: DB_NAME
+        value: postgres
+      - key: DB_USER
+        value: postgres.dqvfzavrabcoothnruxf
+      - key: DB_PASSWORD
+        sync: false  # You'll add this manually in Render dashboard for security
+      - key: GOOGLE_GEOCODING_API_KEY
+        sync: false
+      - key: INTELLEX_CELLS_API_KEY
+        sync: false
+      - key: INTELLEX_DISTRICTS_API_KEY
+        sync: false
+      - key: INTELLEX_PROVINCES_API_KEY
+        sync: false
+      - key: INTELLEX_SECTORS_API_KEY
+        sync: false
+      - key: OPENWEATHER_API_KEY
+        sync: false
+    healthCheckPath: /
+    autoDeploy: true

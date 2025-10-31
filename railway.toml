@@ -1,8 +1,0 @@
-[service]
-sourcePath = "agrivet-backend"
-
-[build]
-builder = "nixpacks"
-
-[deploy]
-startCommand = "npm start"

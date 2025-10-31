@@ -1,5 +1,5 @@
 const axios = require('axios');
-const geocodingService = require('./geoCodingService');
+const geocodingService = require('./geocodingService');
 const { Farmer } = require('../models');
 
 class WeatherService {
