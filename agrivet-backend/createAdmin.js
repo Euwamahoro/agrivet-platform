@@ -1,84 +1,45 @@
-// createAdmin.js - Complete script with proper password hashing
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-require('dotenv').config();
+// testSync.js - TEST SYNC ENDPOINTS
+const axios = require('axios');
 
-// MongoDB connection URL - replace with your actual connection string
-const MONGODB_URI = process.env.MONGODB_URI;
+async function testSync() {
+  console.log('🔄 TESTING SYNC ENDPOINTS\n');
 
-// User schema (should match your existing user model)
-const userSchema = new mongoose.Schema({
-  phoneNumber: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  role: { type: String, enum: ['user', 'graduate', 'admin'], default: 'user' },
-  isActive: { type: Boolean, default: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
+  const baseURL = 'https://agrivet.up.railway.app';
 
-const User = mongoose.model('User', userSchema);
-
-async function createAdminUser() {
   try {
-    // Connect to MongoDB
-    console.log('🔗 Connecting to MongoDB...');
-    await mongoose.connect(MONGODB_URI);
-    console.log('✅ Connected to MongoDB');
-
-    // Check if admin already exists
-    const existingAdmin = await User.findOne({ 
-      $or: [
-        { phoneNumber: '0780000001' },
-        { email: 'deployer@agrivet.com' }
-      ]
-    });
-
-    if (existingAdmin) {
-      console.log('⚠️ Admin user already exists:');
-      console.log(`   Phone: ${existingAdmin.phoneNumber}`);
-      console.log(`   Name: ${existingAdmin.name}`);
-      console.log(`   Role: ${existingAdmin.role}`);
-      return;
+    // Test 1: Check if USSD endpoints are accessible
+    console.log('1. Testing USSD endpoints...');
+    try {
+      const ussdResponse = await axios.get('https://agrivet-ussd.onrender.com/api/farmers/sync', {
+        timeout: 10000
+      });
+      console.log('   ✅ USSD farmers endpoint:', ussdResponse.data);
+    } catch (ussdError) {
+      console.log('   ❌ USSD farmers endpoint error:', ussdError.message);
     }
 
-    // Hash the password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash('deploy1123#', saltRounds);
+    try {
+      const ussdRequests = await axios.get('https://agrivet-ussd.onrender.com/api/service-requests/sync', {
+        timeout: 10000
+      });
+      console.log('   ✅ USSD requests endpoint:', ussdRequests.data);
+    } catch (ussdError) {
+      console.log('   ❌ USSD requests endpoint error:', ussdError.message);
+    }
 
-    // Create admin user
-    const adminUser = new User({
-      phoneNumber: '0780000001',
-      name: 'deployer',
-      email: 'deployer@agrivet.com',
-      password: hashedPassword,
-      role: 'admin',
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
+    // Test 2: Test the sync endpoint
+    console.log('\n2. Testing sync endpoint...');
+    const syncResponse = await axios.get(`${baseURL}/api/test-sync`);
+    console.log('   ✅ Sync endpoint response:', syncResponse.data);
 
-    // Save to database
-    await adminUser.save();
-    console.log('✅ Admin user created successfully!');
-    console.log('📋 Admin Details:');
-    console.log(`   Phone: ${adminUser.phoneNumber}`);
-    console.log(`   Name: ${adminUser.name}`);
-    console.log(`   Email: ${adminUser.email}`);
-    console.log(`   Role: ${adminUser.role}`);
-    console.log(`   Password: deploy1123#`);
-    console.log(`   Status: ${adminUser.isActive ? 'Active' : 'Inactive'}`);
+    // Test 3: Check sync status
+    console.log('\n3. Checking sync status...');
+    const statusResponse = await axios.get(`${baseURL}/api/sync/status`);
+    console.log('   ✅ Sync status:', statusResponse.data);
 
   } catch (error) {
-    console.error('❌ Error creating admin user:', error.message);
-  } finally {
-    // Close connection
-    await mongoose.connection.close();
-    console.log('🔌 MongoDB connection closed');
-    process.exit(0);
+    console.error('❌ Sync test failed:', error.message);
   }
 }
 
-// Run the script
-createAdminUser();
+testSync();
