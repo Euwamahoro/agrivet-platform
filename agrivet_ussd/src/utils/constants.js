@@ -60,7 +60,7 @@ module.exports = {
   REQUEST_STATUS_IN_PROGRESS: 'in_progress',
   REQUEST_STATUS_COMPLETED: 'completed',
   REQUEST_STATUS_CANCELLED: 'cancelled',
-  REQUEST_STATUS_NO_MATCH: 'no_match',
+  REQUEST_STATUS_NO_MATCH: 'pending',
 
   // Intellex API Configuration (already updated)
   INTELLEX_API_BASE_URL: 'https://api.intellex.dev/traffic/pt/',
