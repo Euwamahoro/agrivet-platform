@@ -76,7 +76,7 @@ const AdminDashboard: React.FC = () => {
     setSyncMessage('🔄 Syncing data from USSD...');
     
     // Use full backend URL with port 5000
-    const response = await fetch('http://localhost:5000/api/test-sync');
+    const response = await fetch('https://agrivet.up.railway.app/api/test-sync');
     const result = await response.json();
     
     if (result.success) {
