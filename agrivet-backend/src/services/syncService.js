@@ -5,7 +5,7 @@ class SyncService {
   constructor() {
     // Use environment variables with fallback to actual deployed URLs
     this.ussdApiBase = process.env.USSD_API_URL || 'https://agrivet-ussd.onrender.com';
-    this.webApiBase = process.env.WEB_API_URL || 'https://agrivet-backend.up.railway.app';
+    this.webApiBase = process.env.WEB_API_URL || 'https://agrivet.up.railway.app/';
     
     console.log('🔧 Sync Service URLs:', {
       ussd: this.ussdApiBase,
