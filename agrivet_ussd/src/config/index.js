@@ -10,22 +10,9 @@ module.exports = {
     name: process.env.DB_NAME,
     dialect: 'postgres',
     dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      },
-      // Add statement_timeout to work with pooler
-      statement_timeout: 10000
+      // options for pg library
     },
     logging: false, // Set to true to see SQL queries in console
-    pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 10000
-    },
-    // Disable prepared statements for pooler compatibility
-    native: false
   },
   // Add other configurations here as needed
 
@@ -37,17 +24,12 @@ module.exports = {
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
     logging: process.env.DB_LOGGING === 'true' ? console.log : false,
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      }
-    }
+    // Add other Sequelize-specific options here
   },
   test: {
     username: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME + '_test',
+    database: process.env.DB_NAME + '_test', // Common practice
     host: process.env.DB_HOST || '127.0.0.1',
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
@@ -62,7 +44,7 @@ module.exports = {
   },
   
   production: {
-    use_env_variable: 'DATABASE_URL',
+    use_env_variable: 'DATABASE_URL', // Often provided by hosting services
     dialect: 'postgres',
     dialectOptions: {
       ssl: {
