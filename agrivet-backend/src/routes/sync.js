@@ -1,4 +1,4 @@
-// src/routes/sync.js - COMPLETE UPDATED VERSION WITH LOGGING
+// src/routes/sync.js - UPDATED WITH NORMAL ENDPOINTS
 const express = require('express');
 const Farmer = require('../models/Farmer');
 const ServiceRequest = require('../models/serviceRequest');
@@ -6,8 +6,8 @@ const Graduate = require('../models/Graduate');
 
 const router = express.Router();
 
-// Sync farmers from USSD to Web
-router.post('/farmers/sync', async (req, res) => {
+// Sync farmers from USSD to Web - CHANGED FROM '/farmers/sync' to '/farmers'
+router.post('/farmers', async (req, res) => {
   try {
     const { farmers } = req.body;
     
@@ -98,8 +98,8 @@ router.post('/farmers/sync', async (req, res) => {
   }
 });
 
-// Sync service requests from USSD to Web
-router.post('/service-requests/sync', async (req, res) => {
+// Sync service requests from USSD to Web - CHANGED FROM '/service-requests/sync' to '/service-requests'
+router.post('/service-requests', async (req, res) => {
   try {
     const { serviceRequests } = req.body;
     
@@ -239,7 +239,7 @@ router.post('/service-requests/sync', async (req, res) => {
   }
 });
 
-// Get sync status (for debugging)
+// Keep the status endpoint as is
 router.get('/status', async (req, res) => {
   try {
     const farmerCount = await Farmer.countDocuments();
