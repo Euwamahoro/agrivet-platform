@@ -1,10 +1,12 @@
 🌾 AgriVet Platform: https://go.screenpal.com/watch/cTXVF0nFDwh
+
 A comprehensive agricultural support platform connecting farmers with agricultural graduates for veterinary and agronomy services through USSD and web interfaces, along with access to agricultural tips and weather information.
 
 🚀 Quick Access
 🌐 Web Platform: https://agrivet-web.vercel.app
 
 🎥 Demo Video: Watch 5-minute demo
+Demo vid: https://go.screenpal.com/watch/cTXVF0nFDwh
 
 🔗 Backend API: https://agrivet.up.railway.app
 
