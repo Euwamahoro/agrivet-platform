@@ -1,11 +1,11 @@
-// src/services/syncService.js - COMPLETE UPDATED VERSION
+// src/services/syncService.js - COMPLETE FIXED VERSION
 const axios = require('axios');
 
 class SyncService {
   constructor() {
     // Use environment variables with fallback to actual deployed URLs
     this.ussdApiBase = process.env.USSD_API_URL || 'https://agrivet-ussd.onrender.com';
-    this.webApiBase = process.env.WEB_API_URL || 'https://agrivet.up.railway.app/';
+    this.webApiBase = process.env.WEB_API_URL || 'https://agrivet.up.railway.app'; //
     
     console.log('🔧 Sync Service URLs:', {
       ussd: this.ussdApiBase,
@@ -16,7 +16,7 @@ class SyncService {
   // Sync from USSD to Web (Primary sync method)
   async syncFromUSSDToWeb() {
     try {
-      console.log('🔄 Starting sync from USSD to Web...');
+      console.log('🔄 DEBUG SYNC - Starting sync from USSD to Web...');
       console.log('📡 USSD API:', this.ussdApiBase);
       console.log('📡 Web API:', this.webApiBase);
 
@@ -25,44 +25,44 @@ class SyncService {
 
       // 1. Get farmers from USSD
       try {
-        console.log('📥 Fetching farmers from USSD...');
+        console.log('🔄 DEBUG SYNC - Fetching farmers from USSD...');
         const farmersResponse = await axios.get(`${this.ussdApiBase}/api/farmers/sync`, {
-          timeout: 15000,
-          validateStatus: function (status) {
-            return status < 500; // Resolve only if status code is less than 500
-          }
+          timeout: 15000
         });
+        
+        console.log('🔄 DEBUG SYNC - Farmers response status:', farmersResponse.status);
+        console.log('🔄 DEBUG SYNC - Farmers response data:', JSON.stringify(farmersResponse.data, null, 2));
         
         if (farmersResponse.data && farmersResponse.data.success) {
           farmers = farmersResponse.data.data || [];
-          console.log(`📋 Found ${farmers.length} farmers in USSD`);
+          console.log(`🔄 DEBUG SYNC - Found ${farmers.length} farmers in USSD`);
         } else {
-          console.log('⚠️ No farmers data found in USSD response');
+          console.log('⚠️ DEBUG SYNC - No farmers data found in USSD response');
         }
       } catch (farmersError) {
-        console.error('❌ Failed to fetch farmers from USSD:', farmersError.message);
-        // Continue with other sync operations
+        console.error('❌ DEBUG SYNC - Failed to fetch farmers from USSD:', farmersError.message);
+        console.error('❌ DEBUG SYNC - Farmers error details:', farmersError.response?.data || farmersError);
       }
 
       // 2. Get service requests from USSD
       try {
-        console.log('📥 Fetching service requests from USSD...');
+        console.log('🔄 DEBUG SYNC - Fetching service requests from USSD...');
         const requestsResponse = await axios.get(`${this.ussdApiBase}/api/service-requests/sync`, {
-          timeout: 15000,
-          validateStatus: function (status) {
-            return status < 500;
-          }
+          timeout: 15000
         });
+        
+        console.log('🔄 DEBUG SYNC - Requests response status:', requestsResponse.status);
+        console.log('🔄 DEBUG SYNC - Requests response data:', JSON.stringify(requestsResponse.data, null, 2));
         
         if (requestsResponse.data && requestsResponse.data.success) {
           serviceRequests = requestsResponse.data.data || [];
-          console.log(`📋 Found ${serviceRequests.length} service requests in USSD`);
+          console.log(`🔄 DEBUG SYNC - Found ${serviceRequests.length} service requests in USSD`);
         } else {
-          console.log('⚠️ No service requests data found in USSD response');
+          console.log('⚠️ DEBUG SYNC - No service requests data found in USSD response');
         }
       } catch (requestsError) {
-        console.error('❌ Failed to fetch service requests from USSD:', requestsError.message);
-        // Continue with other sync operations
+        console.error('❌ DEBUG SYNC - Failed to fetch service requests from USSD:', requestsError.message);
+        console.error('❌ DEBUG SYNC - Requests error details:', requestsError.response?.data || requestsError);
       }
 
       let farmersSynced = 0;
@@ -71,56 +71,70 @@ class SyncService {
       // 3. Sync farmers to web
       if (farmers.length > 0) {
         try {
-          console.log('🔄 Syncing farmers to web...');
+          console.log('🔄 DEBUG SYNC - Attempting to sync farmers to web...');
+          console.log('🔄 DEBUG SYNC - Sending farmers data:', JSON.stringify(farmers, null, 2));
+          
           const farmersSyncResponse = await axios.post(`${this.webApiBase}/api/sync/farmers`, {
             farmers: farmers
           }, {
             timeout: 15000,
-            validateStatus: function (status) {
-              return status < 500;
+            headers: {
+              'Content-Type': 'application/json'
             }
           });
           
+          console.log('🔄 DEBUG SYNC - Farmers sync response status:', farmersSyncResponse.status);
+          console.log('🔄 DEBUG SYNC - Farmers sync response data:', JSON.stringify(farmersSyncResponse.data, null, 2));
+          
           if (farmersSyncResponse.data && farmersSyncResponse.data.success) {
             farmersSynced = farmers.length;
-            console.log(`✅ Synced ${farmersSynced} farmers to web`);
+            console.log(`✅ DEBUG SYNC - Synced ${farmersSynced} farmers to web`);
           } else {
-            console.log('⚠️ Farmers sync completed but with warnings');
+            console.log('⚠️ DEBUG SYNC - Farmers sync completed but with warnings');
           }
         } catch (farmersSyncError) {
-          console.error('❌ Failed to sync farmers to web:', farmersSyncError.message);
+          console.error('❌ DEBUG SYNC - Failed to sync farmers to web:', farmersSyncError.message);
+          console.error('❌ DEBUG SYNC - Farmers sync error response:', farmersSyncError.response?.data);
+          console.error('❌ DEBUG SYNC - Farmers sync error details:', farmersSyncError);
         }
       } else {
-        console.log('ℹ️ No farmers to sync');
+        console.log('ℹ️ DEBUG SYNC - No farmers to sync');
       }
 
       // 4. Sync service requests to web
       if (serviceRequests.length > 0) {
         try {
-          console.log('🔄 Syncing service requests to web...');
+          console.log('🔄 DEBUG SYNC - Attempting to sync service requests to web...');
+          console.log('🔄 DEBUG SYNC - Sending requests data:', JSON.stringify(serviceRequests, null, 2));
+          
           const requestsSyncResponse = await axios.post(`${this.webApiBase}/api/sync/service-requests`, {
             serviceRequests: serviceRequests
           }, {
             timeout: 15000,
-            validateStatus: function (status) {
-              return status < 500;
+            headers: {
+              'Content-Type': 'application/json'
             }
           });
           
+          console.log('🔄 DEBUG SYNC - Requests sync response status:', requestsSyncResponse.status);
+          console.log('🔄 DEBUG SYNC - Requests sync response data:', JSON.stringify(requestsSyncResponse.data, null, 2));
+          
           if (requestsSyncResponse.data && requestsSyncResponse.data.success) {
             requestsSynced = serviceRequests.length;
-            console.log(`✅ Synced ${requestsSynced} service requests to web`);
+            console.log(`✅ DEBUG SYNC - Synced ${requestsSynced} service requests to web`);
           } else {
-            console.log('⚠️ Service requests sync completed but with warnings');
+            console.log('⚠️ DEBUG SYNC - Service requests sync completed but with warnings');
           }
         } catch (requestsSyncError) {
-          console.error('❌ Failed to sync service requests to web:', requestsSyncError.message);
+          console.error('❌ DEBUG SYNC - Failed to sync service requests to web:', requestsSyncError.message);
+          console.error('❌ DEBUG SYNC - Requests sync error response:', requestsSyncError.response?.data);
+          console.error('❌ DEBUG SYNC - Requests sync error details:', requestsSyncError);
         }
       } else {
-        console.log('ℹ️ No service requests to sync');
+        console.log('ℹ️ DEBUG SYNC - No service requests to sync');
       }
 
-      console.log('🎉 USSD to Web sync completed successfully');
+      console.log('🎉 DEBUG SYNC - USSD to Web sync completed');
       return {
         success: true,
         farmers: farmersSynced,
@@ -128,7 +142,7 @@ class SyncService {
         message: `Synced ${farmersSynced} farmers and ${requestsSynced} service requests from USSD to Web`
       };
     } catch (error) {
-      console.error('❌ USSD to Web sync failed:', error);
+      console.error('❌ DEBUG SYNC - USSD to Web sync failed:', error);
       
       let errorMessage = 'Sync failed';
       
@@ -158,10 +172,7 @@ class SyncService {
       try {
         console.log('📥 Fetching graduates from Web...');
         const graduatesResponse = await axios.get(`${this.webApiBase}/api/graduates/sync`, {
-          timeout: 15000,
-          validateStatus: function (status) {
-            return status < 500;
-          }
+          timeout: 15000
         });
         
         if (graduatesResponse.data && graduatesResponse.data.success) {
@@ -178,10 +189,7 @@ class SyncService {
       try {
         console.log('📥 Fetching service requests from Web...');
         const requestsResponse = await axios.get(`${this.webApiBase}/api/service-requests/sync`, {
-          timeout: 15000,
-          validateStatus: function (status) {
-            return status < 500;
-          }
+          timeout: 15000
         });
         
         if (requestsResponse.data && requestsResponse.data.success) {
@@ -224,10 +232,7 @@ class SyncService {
           const requestsSyncResponse = await axios.post(`${this.ussdApiBase}/api/sync/service-requests`, {
             serviceRequests: serviceRequests
           }, {
-            timeout: 15000,
-            validateStatus: function (status) {
-              return status < 500;
-            }
+            timeout: 15000
           });
           
           if (requestsSyncResponse.data && requestsSyncResponse.data.success) {
@@ -271,10 +276,7 @@ class SyncService {
         cell: graduateData.cell,
         location: graduateData.location
       }, {
-        timeout: 10000,
-        validateStatus: function (status) {
-          return status < 500;
-        }
+        timeout: 10000
       });
       
       console.log('✅ Graduate synced successfully to USSD:', response.data);
@@ -296,10 +298,7 @@ class SyncService {
   async getGraduatesFromUSSD() {
     try {
       const response = await axios.get(`${this.ussdApiBase}/api/graduates/sync`, {
-        timeout: 10000,
-        validateStatus: function (status) {
-          return status < 500;
-        }
+        timeout: 10000
       });
       return response.data.data || [];
     } catch (error) {
@@ -312,10 +311,7 @@ class SyncService {
   async getSyncStatus() {
     try {
       const response = await axios.get(`${this.webApiBase}/api/sync/status`, {
-        timeout: 10000,
-        validateStatus: function (status) {
-          return status < 500;
-        }
+        timeout: 10000
       });
       return response.data.data || {};
     } catch (error) {
