@@ -90,7 +90,7 @@ router.get('/api/service-requests/sync', async (req, res) => {
           required: false
         }
       ],
-      attributes: ['id', 'service_type', 'description', 'status', 'farmer_id', 'farmerPhone', 'graduate_id', 'createdAt', 'updatedAt'] // ADDED farmerPhone
+      attributes: ['id', 'service_type', 'description', 'status', 'farmer_id', 'graduate_id', 'createdAt', 'updatedAt'] // REMOVED farmerPhone from here
     });
     
     console.log(`📋 DEBUG - Found ${requests.length} service requests`);
@@ -99,7 +99,6 @@ router.get('/api/service-requests/sync', async (req, res) => {
     const formattedRequests = requests.map(req => {
       console.log('🔍 DEBUG - Raw service request data:', {
         id: req.id,
-        farmerPhone: req.farmerPhone, // Check the stored farmerPhone
         farmer_id: req.farmer_id,
         hasFarmer: !!req.farmer,
         farmerPhoneFromRelation: req.farmer?.phone_number,
@@ -121,8 +120,8 @@ router.get('/api/service-requests/sync', async (req, res) => {
         assigned_at: req.graduate_id ? req.updatedAt : null,
         created_at: req.createdAt,
         updated_at: req.updatedAt,
-        // PRIORITIZE farmerPhone from ServiceRequest, then fallback to relation
-        farmer_phone: req.farmerPhone || req.farmer?.phone_number || null,
+        // Use farmer phone from the relation (since farmerPhone column doesn't exist yet)
+        farmer_phone: req.farmer?.phone_number || null,
         graduate_phone: req.graduate?.phone_number || null,
         farmer_id: req.farmer_id // Include farmer_id for debugging
       };
@@ -157,20 +156,19 @@ router.get('/api/service-requests/sync', async (req, res) => {
   }
 });
 
-// NEW: Debug endpoint to check service request data structure
+// UPDATED: Debug endpoint to check service request data structure
 router.get('/api/debug/service-requests', async (req, res) => {
   try {
     console.log('🐛 DEBUG - Checking service request data structure...');
     
     // Get raw service request without includes to see the actual stored data
     const rawRequest = await ServiceRequest.findOne({
-      attributes: ['id', 'service_type', 'description', 'status', 'farmer_id', 'farmerPhone', 'graduate_id', 'createdAt', 'updatedAt'],
+      attributes: ['id', 'service_type', 'description', 'status', 'farmer_id', 'graduate_id', 'createdAt', 'updatedAt'], // REMOVED farmerPhone from here
       order: [['createdAt', 'DESC']]
     });
     
     console.log('🐛 DEBUG - Raw service request structure:', {
       id: rawRequest?.id,
-      farmerPhone: rawRequest?.farmerPhone,
       farmer_id: rawRequest?.farmer_id,
       service_type: rawRequest?.service_type,
       dataValues: rawRequest?.dataValues
