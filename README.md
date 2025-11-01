@@ -1,9 +1,4 @@
-🌾 AgriVet Platform
-https://img.shields.io/badge/%F0%9F%8C%90-Live_Web_Platform-2ECC71?style=for-the-badge
-https://img.shields.io/badge/%F0%9F%8E%AC-Watch_5_Minute_Demo-FF6B6B?style=for-the-badge
-https://img.shields.io/badge/%F0%9F%94%97-Backend_API-3498DB?style=for-the-badge
-https://img.shields.io/badge/%F0%9F%93%9E-USSD_API-F39C12?style=for-the-badge
-
+🌾 AgriVet Platform: https://go.screenpal.com/watch/cTXVF0nFDwh
 A comprehensive agricultural support platform connecting farmers with agricultural graduates for veterinary and agronomy services through USSD and web interfaces, along with access to agricultural tips and weather information.
 
 🚀 Quick Access
