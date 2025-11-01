@@ -390,6 +390,19 @@ const handleUssdRequest = async (req, res) => {
       const serviceType = session.serviceRequestData.serviceType;
       const description = input;
 
+      console.log('🔍 DEBUG - Farmer information for service request:');
+      console.log('   Farmer ID:', farmer.id);
+      console.log('   Farmer Phone:', farmer.phone_number);
+      console.log('   Farmer Name:', farmer.name);
+      console.log('   Farmer Location:', {
+          province: farmer.province,
+          district: farmer.district,
+          sector: farmer.sector,
+          cell: farmer.cell
+  });
+  console.log('   Service Type:', serviceType);
+  console.log('   Description:', description);
+
       const farmerLocation = {
         province: farmer.province,
         district: farmer.district,
@@ -405,15 +418,17 @@ const handleUssdRequest = async (req, res) => {
 
         if (assignedGraduate) {
           requestStatus = 'assigned';
+          console.log('🎯 DEBUG - Creating service request WITH graduate assignment');
           // UPDATED: Now passing farmer.phoneNumber as second parameter
           const serviceRequest = await serviceRequestService.createServiceRequest(
             farmer.id,
-            farmer.phoneNumber, // ADDED: Farmer phone for sync
+            farmer.phoneNumber,
             assignedGraduate.id,
             serviceType,
             description,
             requestStatus
           );
+          console.log('✅ DEBUG - Service request created:', serviceRequest.id);
           response = ussdService.getTranslatedMessage('service_request_success', currentLanguage, {
             graduateName: assignedGraduate.name,
             requestId: serviceRequest.id.substring(0, 8),
