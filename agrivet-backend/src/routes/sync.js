@@ -1,4 +1,4 @@
-// src/routes/sync.js - UPDATED FOR YOUR MODEL STRUCTURE
+// src/routes/sync.js - COMPLETE UPDATED VERSION WITH LOGGING
 const express = require('express');
 const Farmer = require('../models/Farmer');
 const ServiceRequest = require('../models/serviceRequest');
@@ -11,11 +11,16 @@ router.post('/farmers/sync', async (req, res) => {
   try {
     const { farmers } = req.body;
     
-    console.log(`🔄 DEBUG SYNC ROUTE - Farmers sync called with ${farmers?.length || 0} farmers`);
-    console.log(`🔄 DEBUG SYNC ROUTE - First farmer data:`, farmers?.[0]);
+    console.log(`\n🔄 ===== SYNC ROUTE: FARMERS SYNC STARTED =====`);
+    console.log(`📥 Received ${farmers?.length || 0} farmers from USSD`);
+    console.log('📋 Request body structure:', {
+      hasFarmers: !!farmers,
+      farmersType: Array.isArray(farmers) ? 'array' : typeof farmers,
+      farmersLength: farmers?.length || 0
+    });
 
     if (!farmers || farmers.length === 0) {
-      console.log('❌ DEBUG SYNC ROUTE - No farmers data received');
+      console.log('❌ No farmers data received in request body');
       return res.json({ 
         success: true, 
         message: 'No farmers to sync',
@@ -23,12 +28,17 @@ router.post('/farmers/sync', async (req, res) => {
       });
     }
 
+    console.log('👥 First farmer in request:', farmers[0]);
+
     const syncedFarmers = await Promise.all(
-      farmers.map(async (farmerData) => {
+      farmers.map(async (farmerData, index) => {
         try {
-          console.log(`🔄 DEBUG SYNC ROUTE - Processing farmer: ${farmerData.phone_number}`);
-          console.log(`🔄 DEBUG SYNC ROUTE - Farmer data:`, farmerData);
-          
+          console.log(`\n🔄 Processing farmer ${index + 1}/${farmers.length}:`, {
+            id: farmerData.id,
+            phone: farmerData.phone_number,
+            name: farmerData.name
+          });
+
           // Check if farmer already exists by ussdId or phone
           const existingFarmer = await Farmer.findOne({
             $or: [
@@ -38,7 +48,7 @@ router.post('/farmers/sync', async (req, res) => {
           });
 
           if (existingFarmer) {
-            console.log(`✅ DEBUG SYNC ROUTE - Farmer already exists: ${existingFarmer.name}`);
+            console.log(`✅ Farmer already exists: ${existingFarmer.name} (${existingFarmer.phone})`);
             return existingFarmer;
           }
 
@@ -57,18 +67,22 @@ router.post('/farmers/sync', async (req, res) => {
           });
 
           await farmer.save();
-          console.log(`✅ DEBUG SYNC ROUTE - Farmer created: ${farmer.name} (${farmer.phone})`);
+          console.log(`🎉 Farmer created successfully: ${farmer.name} (${farmer.phone})`);
+          console.log(`📝 MongoDB ID: ${farmer._id}, USSD ID: ${farmer.ussdId}`);
           return farmer;
         } catch (error) {
-          console.error(`❌ DEBUG SYNC ROUTE - Failed to sync farmer ${farmerData.phone_number}:`, error.message);
-          console.error(`❌ DEBUG SYNC ROUTE - Farmer sync error details:`, error);
+          console.error(`❌ Failed to sync farmer ${farmerData.phone_number}:`, error.message);
+          console.error('🔧 Farmer sync error details:', error);
           return null;
         }
       })
     );
 
     const successfulSyncs = syncedFarmers.filter(farmer => farmer !== null);
-    console.log(`✅ DEBUG SYNC ROUTE - Successfully synced ${successfulSyncs.length} farmers`);
+    console.log(`\n📊 Farmer sync summary:`);
+    console.log(`   Total received: ${farmers.length}`);
+    console.log(`   Successfully synced: ${successfulSyncs.length}`);
+    console.log(`   Failed: ${farmers.length - successfulSyncs.length}`);
 
     res.json({
       success: true,
@@ -76,7 +90,7 @@ router.post('/farmers/sync', async (req, res) => {
       data: successfulSyncs
     });
   } catch (error) {
-    console.error('❌ DEBUG SYNC ROUTE - Error syncing farmers:', error);
+    console.error('❌ Error syncing farmers:', error);
     res.status(500).json({ 
       success: false,
       error: 'Failed to sync farmers from USSD' 
@@ -89,11 +103,16 @@ router.post('/service-requests/sync', async (req, res) => {
   try {
     const { serviceRequests } = req.body;
     
-    console.log(`🔄 DEBUG SYNC ROUTE - Service requests sync called with ${serviceRequests?.length || 0} requests`);
-    console.log(`🔄 DEBUG SYNC ROUTE - First request data:`, serviceRequests?.[0]);
+    console.log(`\n🔄 ===== SYNC ROUTE: SERVICE REQUESTS SYNC STARTED =====`);
+    console.log(`📥 Received ${serviceRequests?.length || 0} service requests from USSD`);
+    console.log('📋 Request body structure:', {
+      hasServiceRequests: !!serviceRequests,
+      serviceRequestsType: Array.isArray(serviceRequests) ? 'array' : typeof serviceRequests,
+      serviceRequestsLength: serviceRequests?.length || 0
+    });
 
     if (!serviceRequests || serviceRequests.length === 0) {
-      console.log('❌ DEBUG SYNC ROUTE - No service requests data received');
+      console.log('❌ No service requests data received in request body');
       return res.json({ 
         success: true, 
         message: 'No service requests to sync',
@@ -101,15 +120,21 @@ router.post('/service-requests/sync', async (req, res) => {
       });
     }
 
+    console.log('📋 First service request in request:', serviceRequests[0]);
+
     const syncedRequests = await Promise.all(
-      serviceRequests.map(async (requestData) => {
+      serviceRequests.map(async (requestData, index) => {
         try {
-          console.log(`🔄 DEBUG SYNC ROUTE - Processing request:`, requestData);
-          
+          console.log(`\n🔄 Processing service request ${index + 1}/${serviceRequests.length}:`, {
+            id: requestData.id,
+            service_type: requestData.service_type,
+            status: requestData.status
+          });
+
           // Check if request already exists
           const existingRequest = await ServiceRequest.findOne({ ussdId: requestData.id });
           if (existingRequest) {
-            console.log(`✅ DEBUG SYNC ROUTE - Request already exists: ${existingRequest._id}`);
+            console.log(`✅ Service request already exists: ${existingRequest._id}`);
             return existingRequest;
           }
 
@@ -122,14 +147,14 @@ router.post('/service-requests/sync', async (req, res) => {
           });
 
           if (!farmer) {
-            console.warn(`❌ DEBUG SYNC ROUTE - No matching farmer found for USSD ID: ${requestData.farmer_id} or phone: ${requestData.farmer_phone}`);
+            console.warn(`❌ No matching farmer found for USSD ID: ${requestData.farmer_id} or phone: ${requestData.farmer_phone}`);
             
             // Try to create a placeholder farmer if none exists
             if (requestData.farmer_phone) {
-              console.log(`🔄 DEBUG SYNC ROUTE - Creating placeholder farmer for phone: ${requestData.farmer_phone}`);
+              console.log(`🔄 Creating placeholder farmer for phone: ${requestData.farmer_phone}`);
               farmer = new Farmer({
                 phone: requestData.farmer_phone,
-                name: 'Farmer from USSD', // Default name
+                name: 'Farmer from USSD',
                 province: requestData.province || 'Unknown',
                 district: requestData.district || 'Unknown',
                 sector: requestData.sector || 'Unknown',
@@ -140,13 +165,14 @@ router.post('/service-requests/sync', async (req, res) => {
                 completedRequests: 0
               });
               await farmer.save();
-              console.log(`✅ DEBUG SYNC ROUTE - Created placeholder farmer: ${farmer._id}`);
+              console.log(`✅ Created placeholder farmer: ${farmer._id}`);
             } else {
+              console.log('❌ Cannot create farmer - no phone number provided');
               return null;
             }
           }
 
-          console.log(`✅ DEBUG SYNC ROUTE - Found farmer: ${farmer.name} (${farmer.phone})`);
+          console.log(`✅ Found farmer: ${farmer.name} (${farmer.phone})`);
 
           // Find graduate if assigned
           let graduate = null;
@@ -155,9 +181,9 @@ router.post('/service-requests/sync', async (req, res) => {
               phoneNumber: requestData.graduate_phone 
             });
             if (graduate) {
-              console.log(`✅ DEBUG SYNC ROUTE - Found graduate: ${graduate.name}`);
+              console.log(`✅ Found graduate: ${graduate.name}`);
             } else {
-              console.warn(`⚠️ DEBUG SYNC ROUTE - No graduate found for phone: ${requestData.graduate_phone}`);
+              console.warn(`⚠️ No graduate found for phone: ${requestData.graduate_phone}`);
             }
           }
 
@@ -167,7 +193,7 @@ router.post('/service-requests/sync', async (req, res) => {
             graduate: graduate ? graduate._id : undefined,
             serviceType: requestData.service_type,
             description: requestData.description,
-            status: requestData.status === 'no_match' ? 'pending' : requestData.status, // Map 'no_match' to 'pending'
+            status: requestData.status === 'no_match' ? 'pending' : requestData.status,
             location: {
               province: requestData.province,
               district: requestData.district,
@@ -181,11 +207,12 @@ router.post('/service-requests/sync', async (req, res) => {
           });
 
           await request.save();
-          console.log(`✅ DEBUG SYNC ROUTE - Service request created: ${request._id} (Status: ${request.status})`);
+          console.log(`🎉 Service request created successfully: ${request._id}`);
+          console.log(`📝 MongoDB ID: ${request._id}, USSD ID: ${request.ussdId}, Status: ${request.status}`);
           return request;
         } catch (error) {
-          console.error(`❌ DEBUG SYNC ROUTE - Failed to sync service request ${requestData.id}:`, error.message);
-          console.error(`❌ DEBUG SYNC ROUTE - Request sync error details:`, error);
+          console.error(`❌ Failed to sync service request ${requestData.id}:`, error.message);
+          console.error('🔧 Request sync error details:', error);
           return null;
         }
       })
@@ -193,7 +220,10 @@ router.post('/service-requests/sync', async (req, res) => {
 
     // Filter out failed syncs
     const successfulSyncs = syncedRequests.filter(req => req !== null);
-    console.log(`✅ DEBUG SYNC ROUTE - Successfully synced ${successfulSyncs.length} service requests`);
+    console.log(`\n📊 Service request sync summary:`);
+    console.log(`   Total received: ${serviceRequests.length}`);
+    console.log(`   Successfully synced: ${successfulSyncs.length}`);
+    console.log(`   Failed: ${serviceRequests.length - successfulSyncs.length}`);
 
     res.json({
       success: true,
@@ -201,7 +231,7 @@ router.post('/service-requests/sync', async (req, res) => {
       data: successfulSyncs
     });
   } catch (error) {
-    console.error('❌ DEBUG SYNC ROUTE - Error syncing service requests:', error);
+    console.error('❌ Error syncing service requests:', error);
     res.status(500).json({ 
       success: false,
       error: 'Failed to sync service requests from USSD' 
@@ -217,8 +247,11 @@ router.get('/status', async (req, res) => {
     const ussdServiceRequestCount = await ServiceRequest.countDocuments({ ussdId: { $exists: true } });
     const ussdFarmerCount = await Farmer.countDocuments({ ussdId: { $exists: true } });
 
-    console.log(`📊 DEBUG SYNC STATUS - Farmers: ${farmerCount}, USSD Farmers: ${ussdFarmerCount}`);
-    console.log(`📊 DEBUG SYNC STATUS - Requests: ${serviceRequestCount}, USSD Requests: ${ussdServiceRequestCount}`);
+    console.log(`\n📊 ===== SYNC STATUS CHECK =====`);
+    console.log(`   Total Farmers: ${farmerCount}`);
+    console.log(`   USSD Farmers: ${ussdFarmerCount}`);
+    console.log(`   Total Service Requests: ${serviceRequestCount}`);
+    console.log(`   USSD Service Requests: ${ussdServiceRequestCount}`);
 
     res.json({
       success: true,
@@ -230,7 +263,7 @@ router.get('/status', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ DEBUG SYNC STATUS - Error getting sync status:', error);
+    console.error('❌ Error getting sync status:', error);
     res.status(500).json({ 
       success: false,
       error: 'Failed to get sync status' 

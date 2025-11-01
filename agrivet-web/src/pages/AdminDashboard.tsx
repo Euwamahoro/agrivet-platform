@@ -1,4 +1,4 @@
-// src/pages/AdminDashboard.tsx
+// src/pages/AdminDashboard.tsx - COMPLETE UPDATED VERSION WITH BETTER SYNC FEEDBACK
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -53,6 +53,7 @@ const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
+  const [syncDetails, setSyncDetails] = useState('');
 
   useEffect(() => {
     fetchPlatformStats();
@@ -61,39 +62,68 @@ const AdminDashboard: React.FC = () => {
   const fetchPlatformStats = async () => {
     try {
       setLoading(true);
+      console.log('🔄 AdminDashboard: Fetching platform stats...');
       const stats = await getPlatformStats();
+      console.log('✅ AdminDashboard: Platform stats received:', stats);
       setPlatformStats(stats);
     } catch (error) {
-      console.error('Error fetching platform stats:', error);
+      console.error('❌ AdminDashboard: Error fetching platform stats:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const syncUSSDData = async () => {
-  try {
-    setSyncLoading(true);
-    setSyncMessage('🔄 Syncing data from USSD...');
-    
-    // Use full backend URL with port 5000
-    const response = await fetch('https://agrivet.up.railway.app/api/test-sync');
-    const result = await response.json();
-    
-    if (result.success) {
-      setSyncMessage('✅ Sync successful! Data loaded from USSD.');
-      await fetchPlatformStats();
-    } else {
-      setSyncMessage(`❌ Sync failed: ${result.error}`);
+    try {
+      setSyncLoading(true);
+      setSyncMessage('🔄 Starting sync from USSD...');
+      setSyncDetails('Connecting to sync service...');
+      
+      console.log('🔄 AdminDashboard: Starting USSD sync...');
+      const syncUrl = 'https://agrivet.up.railway.app/api/test-sync';
+      console.log('🌐 Sync URL:', syncUrl);
+
+      setSyncDetails('Fetching data from USSD database...');
+      const response = await fetch(syncUrl);
+      
+      console.log('✅ AdminDashboard: Sync response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('📊 AdminDashboard: Sync result received:', result);
+      
+      if (result.success) {
+        const farmersSynced = result.result?.farmers || 0;
+        const requestsSynced = result.result?.serviceRequests || 0;
+        
+        setSyncMessage(`✅ Sync successful! ${farmersSynced} farmers and ${requestsSynced} service requests loaded from USSD.`);
+        setSyncDetails(`Farmers: ${farmersSynced}, Service Requests: ${requestsSynced}`);
+        
+        console.log(`🎉 AdminDashboard: Sync successful - ${farmersSynced} farmers, ${requestsSynced} service requests`);
+        
+        // Refresh platform stats to show updated data
+        await fetchPlatformStats();
+      } else {
+        setSyncMessage(`❌ Sync failed: ${result.error || 'Unknown error'}`);
+        setSyncDetails('Check backend logs for details');
+        console.error('❌ AdminDashboard: Sync failed:', result.error);
+      }
+    } catch (error) {
+      console.error('❌ AdminDashboard: Sync failed:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      setSyncMessage(`❌ Sync failed: ${message}`);
+      setSyncDetails('Network or server error - check console for details');
+    } finally {
+      setSyncLoading(false);
+      setTimeout(() => {
+        setSyncMessage('');
+        setSyncDetails('');
+      }, 10000);
     }
-  } catch (error) {
-    console.error('Sync failed:', error);
-    const message = error instanceof Error ? error.message : String(error);
-    setSyncMessage(`❌ Sync failed: ${message}`);
-  } finally {
-    setSyncLoading(false);
-    setTimeout(() => setSyncMessage(''), 5000);
-  }
-};
+  };
 
   if (loading) {
     return (
@@ -120,19 +150,23 @@ const AdminDashboard: React.FC = () => {
             <div className="text-right">
               <p className="text-sm text-gray-500">Welcome back,</p>
               <p className="text-lg font-semibold text-gray-900">{user?.name}</p>
+              <p className="text-sm text-gray-500 capitalize">{user?.role}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Sync Status Message */}
-      {syncMessage && (
+      {(syncMessage || syncDetails) && (
         <div className={`p-4 rounded-lg ${
           syncMessage.includes('✅') 
             ? 'bg-green-100 border border-green-400 text-green-700'
             : 'bg-red-100 border border-red-400 text-red-700'
         }`}>
-          {syncMessage}
+          <div className="font-medium">{syncMessage}</div>
+          {syncDetails && (
+            <div className="text-sm mt-1 opacity-75">{syncDetails}</div>
+          )}
         </div>
       )}
 
@@ -408,7 +442,7 @@ const AdminDashboard: React.FC = () => {
           Refresh Dashboard
         </button>
         
-        {/* NEW: Sync USSD Data Button */}
+        {/* Sync USSD Data Button */}
         <button
           onClick={syncUSSDData}
           disabled={syncLoading}
@@ -416,6 +450,36 @@ const AdminDashboard: React.FC = () => {
         >
           {syncLoading ? '🔄 Syncing...' : '🔄 Sync USSD Data'}
         </button>
+      </div>
+
+      {/* Sync Status Card */}
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-4 py-5 sm:p-6">
+          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+            Sync Status
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="text-center p-4 border border-gray-200 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">
+                {platformStats.totalFarmers}
+              </div>
+              <div className="text-sm text-gray-600">Farmers in System</div>
+              <div className="text-xs text-gray-500">Web + USSD combined</div>
+            </div>
+            <div className="text-center p-4 border border-gray-200 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">
+                {platformStats.activeRequests}
+              </div>
+              <div className="text-sm text-gray-600">Active Service Requests</div>
+              <div className="text-xs text-gray-500">Pending and in-progress</div>
+            </div>
+          </div>
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-500">
+              Last sync: {new Date().toLocaleTimeString()}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
