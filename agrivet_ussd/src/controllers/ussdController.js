@@ -2,7 +2,7 @@ const ussdService = require('../services/ussdService');
 const farmerService = require('../services/farmerService');
 const serviceRequestService = require('../services/serviceRequestService');
 const graduateService = require('../services/graduateService');
-const weatherService = require('../services/weatherService'); // ADD THIS
+const weatherService = require('../services/weatherService');
 
 const {
   USSD_CONTINUE,
@@ -18,8 +18,8 @@ const {
   STATE_FARMER_UPDATE_MENU,
   STATE_REQUEST_SERVICE_TYPE,
   STATE_REQUEST_DESCRIPTION,
-  STATE_WEATHER_INFO, // ADD THIS
-  STATE_FARMING_TIPS, // ADD THIS
+  STATE_WEATHER_INFO,
+  STATE_FARMING_TIPS,
   LANG_EN_OPTION,
   LANG_RW_OPTION,
   LANG_SW_OPTION,
@@ -31,8 +31,8 @@ const {
   MENU_OPTION_MY_REQUEST_STATUS,
   MENU_OPTION_CHANGE_LANGUAGE,
   MENU_OPTION_EXIT,
-  MENU_OPTION_WEATHER_INFO, // ADD THIS
-  MENU_OPTION_FARMING_TIPS, // ADD THIS
+  MENU_OPTION_WEATHER_INFO,
+  MENU_OPTION_FARMING_TIPS,
   NAV_BACK_TO_MAIN_MENU,
   MAX_NAME_LENGTH,
   MAX_DESCRIPTION_LENGTH,
@@ -98,7 +98,7 @@ const handleUssdRequest = async (req, res) => {
           ussdService.updateSession(sessionId, { state: STATE_REQUEST_SERVICE_TYPE, serviceRequestData: {} });
           response = ussdService.getServiceTypeMenu(currentLanguage);
         }
-      } else if (input === MENU_OPTION_WEATHER_INFO) { // NEW WEATHER OPTION
+      } else if (input === MENU_OPTION_WEATHER_INFO) {
         if (!farmer) {
           response = ussdService.getFarmerNotRegisteredMessage(currentLanguage);
           ussdService.updateSession(sessionId, { state: STATE_SUB_MENU_ACK });
@@ -106,7 +106,7 @@ const handleUssdRequest = async (req, res) => {
           ussdService.updateSession(sessionId, { state: STATE_WEATHER_INFO });
           response = ussdService.getWeatherInfoPrompt(currentLanguage);
         }
-      } else if (input === MENU_OPTION_FARMING_TIPS) { // NEW FARMING TIPS OPTION
+      } else if (input === MENU_OPTION_FARMING_TIPS) {
         ussdService.updateSession(sessionId, { state: STATE_FARMING_TIPS });
         response = ussdService.getFarmingTipsMenu(currentLanguage);
       } else if (input === MENU_OPTION_MY_REQUEST_STATUS) {
@@ -345,7 +345,7 @@ const handleUssdRequest = async (req, res) => {
         response += `\n${ussdService.getUpdateDetailsMenu(currentLanguage)}`;
       }
     }
-    // Service Request Flow
+    // Service Request Flow - UPDATED TO INCLUDE FARMER PHONE
     else if (session.state === STATE_REQUEST_SERVICE_TYPE) {
       const selectedServiceTypeOption = input;
       let serviceType;
@@ -405,8 +405,10 @@ const handleUssdRequest = async (req, res) => {
 
         if (assignedGraduate) {
           requestStatus = 'assigned';
+          // UPDATED: Now passing farmer.phoneNumber as second parameter
           const serviceRequest = await serviceRequestService.createServiceRequest(
             farmer.id,
+            farmer.phoneNumber, // ADDED: Farmer phone for sync
             assignedGraduate.id,
             serviceType,
             description,
@@ -417,8 +419,10 @@ const handleUssdRequest = async (req, res) => {
             requestId: serviceRequest.id.substring(0, 8),
           });
         } else {
+          // UPDATED: Now passing farmer.phoneNumber as second parameter
           const serviceRequest = await serviceRequestService.createServiceRequest(
             farmer.id,
+            farmer.phoneNumber, // ADDED: Farmer phone for sync
             null,
             serviceType,
             description,
@@ -437,7 +441,7 @@ const handleUssdRequest = async (req, res) => {
         ussdService.clearSession(sessionId);
       }
     }
-    // Weather Information Flow - NEW
+    // Weather Information Flow
     else if (session.state === STATE_WEATHER_INFO) {
       try {
         console.log(`🌤️ Getting weather for farmer: ${phoneNumber}`);
@@ -456,7 +460,7 @@ const handleUssdRequest = async (req, res) => {
         ussdService.clearSession(sessionId);
       }
     }
-    // Farming Tips Flow - NEW
+    // Farming Tips Flow
     else if (session.state === STATE_FARMING_TIPS) {
       if (input === NAV_BACK_TO_MAIN_MENU) {
         ussdService.updateSession(sessionId, { state: STATE_MAIN_MENU });
