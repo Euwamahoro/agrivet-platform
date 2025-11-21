@@ -54,44 +54,44 @@ router.get('/api/debug/database-structure', async (req, res) => {
     console.log('🐛 DEBUG - Checking database structure...');
     
     // Check service_requests table structure
-    const serviceRequestColumns = await sequelize.query(`
+    const [serviceRequestColumns] = await sequelize.query(`
       SELECT column_name, data_type, is_nullable 
       FROM information_schema.columns 
       WHERE table_name = 'service_requests'
     `);
     
     // Check farmers table structure  
-    const farmerColumns = await sequelize.query(`
+    const [farmerColumns] = await sequelize.query(`
       SELECT column_name, data_type, is_nullable
       FROM information_schema.columns 
       WHERE table_name = 'farmers'
     `);
     
     // Check actual data in service_requests
-    const serviceRequestsData = await sequelize.query(`
+    const [serviceRequestsData] = await sequelize.query(`
       SELECT id, service_type, farmer_phone, farmer_id, description, status
       FROM service_requests 
       LIMIT 5
     `);
     
     // Check actual data in farmers
-    const farmersData = await sequelize.query(`
+    const [farmersData] = await sequelize.query(`
       SELECT id, phone_number, name 
       FROM farmers 
       LIMIT 5
     `);
     
-    console.log('🐛 DEBUG - Service Requests Columns:', serviceRequestColumns[0]);
-    console.log('🐛 DEBUG - Farmers Columns:', farmerColumns[0]);
-    console.log('🐛 DEBUG - Service Requests Data:', serviceRequestsData[0]);
-    console.log('🐛 DEBUG - Farmers Data:', farmersData[0]);
+    console.log('🐛 DEBUG - Service Requests Columns:', serviceRequestColumns);
+    console.log('🐛 DEBUG - Farmers Columns:', farmerColumns);
+    console.log('🐛 DEBUG - Service Requests Data:', serviceRequestsData);
+    console.log('🐛 DEBUG - Farmers Data:', farmersData);
     
     res.json({
       success: true,
-      service_requests_columns: serviceRequestColumns[0],
-      farmers_columns: farmerColumns[0],
-      service_requests_data: serviceRequestsData[0],
-      farmers_data: farmersData[0]
+      service_requests_columns: serviceRequestColumns,
+      farmers_columns: farmerColumns,
+      service_requests_data: serviceRequestsData,
+      farmers_data: farmersData
     });
   } catch (error) {
     console.error('❌ DEBUG - Error checking database:', error);
@@ -213,6 +213,41 @@ router.post('/api/fix-existing-requests', async (req, res) => {
   }
 });
 
+// Fix farmer_phone for all service requests using SQL (more reliable)
+router.post('/api/fix-farmer-phones-sql', async (req, res) => {
+  try {
+    console.log('🔧 Fixing farmer phones using SQL...');
+    
+    const [result] = await sequelize.query(`
+      UPDATE service_requests 
+      SET farmer_phone = farmers.phone_number
+      FROM farmers 
+      WHERE service_requests.farmer_id = farmers.id 
+      AND service_requests.farmer_phone IS NULL
+    `);
+    
+    console.log(`🔧 Fixed farmer phones for ${result} service requests`);
+    
+    // Verify the fix
+    const [verification] = await sequelize.query(`
+      SELECT COUNT(*) as total, 
+             COUNT(farmer_phone) as with_phone,
+             COUNT(*) - COUNT(farmer_phone) as without_phone
+      FROM service_requests
+    `);
+    
+    res.json({
+      success: true,
+      fixed_count: result,
+      verification: verification[0],
+      message: `Fixed farmer phones for ${result} service requests`
+    });
+  } catch (error) {
+    console.error('❌ Error fixing farmer phones:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // ===== SYNC ENDPOINTS =====
 
 // GET /api/graduates/sync - Get graduates for web platform
@@ -291,55 +326,40 @@ router.get('/api/service-requests/sync', async (req, res) => {
           required: false
         }
       ],
-      attributes: ['id', 'service_type', 'description', 'status', 'farmer_id', 'farmer_phone', 'graduate_id', 'createdAt', 'updatedAt'] // ADDED farmer_phone
+      // ✅ CRITICAL FIX: Include farmer_phone in attributes
+      attributes: ['id', 'service_type', 'farmer_phone', 'description', 'status', 'farmer_id', 'graduate_id', 'createdAt', 'updatedAt']
     });
     
     console.log(`📋 DEBUG - Found ${requests.length} service requests`);
     
-    // Get ALL farmers as backup to ensure we have phone numbers
-    const allFarmers = await Farmer.findAll({
-      attributes: ['id', 'phone_number', 'province', 'district', 'sector', 'cell']
+    // Debug each request to see what data we're getting
+    requests.forEach((req, index) => {
+      console.log(`🔍 DEBUG [${index + 1}/${requests.length}]:`, {
+        id: req.id,
+        service_type: req.service_type,
+        farmer_phone: req.farmer_phone, // This should now show the actual phone!
+        farmer_id: req.farmer_id,
+        has_farmer_phone: !!req.farmer_phone
+      });
     });
     
-    const farmerMap = new Map();
-    allFarmers.forEach(farmer => {
-      farmerMap.set(farmer.id, farmer);
-    });
-    
-    // Format response with guaranteed farmer data
+    // Format response - SIMPLIFIED and more reliable
     const formattedRequests = requests.map(req => {
-      // Try multiple sources for farmer phone
-      const farmerPhone = 
-        req.farmer_phone || // First try the stored farmer_phone
-        req.farmer?.phone_number || // Then try the associated farmer
-        (farmerMap.get(req.farmer_id)?.phone_number) || // Then try our farmer map
-        null;
-      
-      // Use location from the associated farmer
-      const location = req.farmer || farmerMap.get(req.farmer_id);
-      
       const formattedRequest = {
         id: req.id,
         farmer_id: req.farmer_id,
-        farmer_phone: farmerPhone,
-        service_type: req.service_type || 'agronomy', // Fallback for service type
+        farmer_phone: req.farmer_phone, // Direct from the database column
+        service_type: req.service_type,
         description: req.description,
         status: req.status,
-        province: location?.province || null,
-        district: location?.district || null,
-        sector: location?.sector || null,
-        cell: location?.cell || null,
+        province: req.farmer?.province || null,
+        district: req.farmer?.district || null,
+        sector: req.farmer?.sector || null,
+        cell: req.farmer?.cell || null,
         assigned_at: req.graduate_id ? req.updatedAt : null,
         created_at: req.createdAt,
         updated_at: req.updatedAt
       };
-      
-      console.log('📤 DEBUG - Formatted service request:', {
-        id: formattedRequest.id,
-        farmer_phone: formattedRequest.farmer_phone,
-        service_type: formattedRequest.service_type,
-        has_farmer_phone: !!formattedRequest.farmer_phone
-      });
       
       return formattedRequest;
     });
@@ -394,6 +414,31 @@ router.get('/api/debug/service-requests', async (req, res) => {
       error: 'Debug endpoint failed',
       details: error.message 
     });
+  }
+});
+
+// Quick health check for service requests
+router.get('/api/debug/service-requests-health', async (req, res) => {
+  try {
+    const [health] = await sequelize.query(`
+      SELECT 
+        COUNT(*) as total_requests,
+        COUNT(farmer_phone) as requests_with_phone,
+        COUNT(service_type) as requests_with_service_type,
+        COUNT(*) - COUNT(farmer_phone) as missing_phones,
+        COUNT(*) - COUNT(service_type) as missing_service_types
+      FROM service_requests
+    `);
+    
+    console.log('🏥 DEBUG - Service Requests Health:', health[0]);
+    
+    res.json({
+      success: true,
+      data: health[0]
+    });
+  } catch (error) {
+    console.error('❌ DEBUG - Error in health check:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
