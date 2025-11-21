@@ -1,25 +1,54 @@
 const { Farmer } = require('../models');
 
 const findFarmerByPhoneNumber = async (phoneNumber) => {
-  return Farmer.findOne({ where: { phoneNumber } });
+  console.log('🔍 DEBUG - Finding farmer by phone:', phoneNumber);
+  
+  const farmer = await Farmer.findOne({ 
+    where: { phone_number: phoneNumber } // ✅ FIXED: Use phone_number
+  });
+  
+  console.log('🔍 DEBUG - Farmer found:', {
+    found: !!farmer,
+    farmerId: farmer?.id,
+    farmerPhone: farmer?.phoneNumber, // This should now work
+    hasPhoneNumber: !!farmer?.phoneNumber
+  });
+  
+  if (farmer) {
+    console.log('✅ DEBUG - Farmer data:', {
+      id: farmer.id,
+      phoneNumber: farmer.phoneNumber, // JavaScript property
+      phone_number: farmer.phone_number, // Database column
+      name: farmer.name
+    });
+  }
+  
+  return farmer;
 };
 
 const registerFarmer = async (phoneNumber, name, province, district, sector, cell) => {
   try {
+    console.log('🔍 DEBUG - Registering farmer with phone:', phoneNumber);
+    
     const newFarmer = await Farmer.create({
-      phoneNumber,
+      phoneNumber, // Sequelize maps this to phone_number column
       name,
       province,
       district,
       sector,
       cell,
     });
+    
+    console.log('✅ DEBUG - Farmer registered:', {
+      id: newFarmer.id,
+      phoneNumber: newFarmer.phoneNumber
+    });
+    
     return newFarmer;
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
-      // This case should ideally be handled before calling registerFarmer
       console.warn(`Attempted to register existing farmer: ${phoneNumber}`);
-      return null; // Or throw a specific error
+      return null;
     }
     console.error('Error registering farmer:', error);
     throw error;
@@ -29,13 +58,13 @@ const registerFarmer = async (phoneNumber, name, province, district, sector, cel
 const updateFarmer = async (phoneNumber, updates) => {
   try {
     const [updatedRows] = await Farmer.update(updates, {
-      where: { phoneNumber },
-      returning: true, // Return the updated record
+      where: { phone_number: phoneNumber }, // ✅ FIXED: Use phone_number here too
+      returning: true,
     });
     if (updatedRows > 0) {
-      return Farmer.findOne({ where: { phoneNumber } }); // Fetch the updated record
+      return Farmer.findOne({ where: { phone_number: phoneNumber } }); // ✅ FIXED
     }
-    return null; // Farmer not found or no update
+    return null;
   } catch (error) {
     console.error('Error updating farmer:', error);
     throw error;

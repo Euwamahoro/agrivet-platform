@@ -419,6 +419,8 @@ const handleUssdRequest = async (req, res) => {
         if (assignedGraduate) {
           requestStatus = 'assigned';
           console.log('🎯 DEBUG - Creating service request WITH graduate assignment');
+
+          
           // UPDATED: Now passing farmer.phoneNumber as second parameter
           const serviceRequest = await serviceRequestService.createServiceRequest(
             farmer.id,
