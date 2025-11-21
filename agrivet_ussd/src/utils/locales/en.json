@@ -4,7 +4,7 @@
   "lang_option_rw": "2. Kinyarwanda", 
   "lang_option_sw": "3. Kiswahili",
   "invalid_language_option": "Invalid option. Please select your preferred language:",
-  "main_menu_welcome": "Welcome to AgriVet! Please choose an option:",
+  "main_menu_welcome": "Please choose an option:",
   "menu_option_register_farmer": "1. Register as Farmer",
   "menu_option_update_details": "1. Update My Details",
   "menu_option_request_service": "2. Request Service",
