@@ -8,7 +8,6 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
       },
       farmerId: {
-        
         type: DataTypes.UUID,
         allowNull: false,
         field: 'farmer_id',
@@ -16,6 +15,11 @@ module.exports = (sequelize, DataTypes) => {
           model: 'farmers',
           key: 'id'
         }
+      },
+      farmerPhone: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        field: 'farmer_phone'
       },
       graduateId: {
         type: DataTypes.UUID,
