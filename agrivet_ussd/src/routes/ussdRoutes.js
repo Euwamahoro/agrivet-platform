@@ -8,6 +8,45 @@ const weatherService = require('../services/weatherService');
 // The main endpoint for USSD gateway callbacks
 router.post('/ussd', ussdController.handleUssdRequest);
 
+// ADD THIS TEMPORARY DEBUG ENDPOINT
+router.get('/api/debug/farmers-with-requests', async (req, res) => {
+  try {
+    console.log('🐛 DEBUG - Checking farmers associated with service requests...');
+    
+    // Get all service requests with their farmers
+    const requestsWithFarmers = await ServiceRequest.findAll({
+      include: [{
+        model: Farmer,
+        as: 'farmer',
+        attributes: ['id', 'phone_number', 'name', 'province', 'district', 'sector', 'cell']
+      }],
+      limit: 10 // Check first 10
+    });
+    
+    const detailedInfo = requestsWithFarmers.map(req => ({
+      request_id: req.id,
+      farmer_id: req.farmer_id,
+      farmer_exists: !!req.farmer,
+      farmer_phone: req.farmer?.phone_number,
+      farmer_name: req.farmer?.name,
+      farmer_location: req.farmer ? `${req.farmer.province}, ${req.farmer.district}` : 'No farmer'
+    }));
+    
+    console.log('🐛 DEBUG - Farmers with requests:', detailedInfo);
+    
+    res.json({
+      success: true,
+      data: detailedInfo
+    });
+  } catch (error) {
+    console.error('❌ DEBUG - Error checking farmers:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Debug endpoint failed' 
+    });
+  }
+});
+
 // GET /api/graduates/sync - Get graduates for web platform
 router.get('/api/graduates/sync', async (req, res) => {
   try {
