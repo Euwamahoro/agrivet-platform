@@ -1,49 +1,43 @@
 const { ServiceRequest } = require('../models');
 const { REQUEST_STATUS_PENDING, REQUEST_STATUS_NO_MATCH } = require('../utils/constants');
 
+// In serviceRequestService.js - MODIFIED with better logging
 const createServiceRequest = async (farmerId, farmerPhone, graduateId, serviceType, description, status = REQUEST_STATUS_PENDING) => {
   try {
-    console.log(`📝 Creating service request for farmer: ${farmerId}, phone: ${farmerPhone}`);
-    
+    console.log('🔍 DEBUG - ServiceRequest.create() called with:', {
+      farmerId,
+      farmerPhone,
+      graduateId,
+      serviceType,
+      description,
+      status
+    });
+
+    // Validate serviceType is not undefined
+    if (!serviceType) {
+      console.error('❌ DEBUG - serviceType is undefined! Using default: agronomy');
+      serviceType = 'agronomy';
+    }
+
     const newRequest = await ServiceRequest.create({
       farmerId,
-      farmerPhone, // ADDED: Store farmer phone for sync
+      farmerPhone, // This will now work after model update
       graduateId,
       serviceType,
       description,
       status,
     });
-    
-    console.log(`✅ Service request created: ${newRequest.id} for farmer ${farmerPhone}`);
+
+    console.log('✅ DEBUG - ServiceRequest created successfully:', {
+      id: newRequest.id,
+      service_type: newRequest.serviceType,
+      farmer_phone: newRequest.farmerPhone, // This should now show the phone
+      farmer_id: newRequest.farmerId
+    });
+
     return newRequest;
   } catch (error) {
-    console.error('❌ Error creating service request:', error);
-    throw error;
-  }
-};
-
-const findRequestById = async (requestId) => {
-  return ServiceRequest.findByPk(requestId);
-};
-
-const findRequestsByFarmerId = async (farmerId) => {
-  return ServiceRequest.findAll({
-    where: { farmerId },
-    order: [['createdAt', 'DESC']]
-  });
-};
-
-const updateRequestStatus = async (requestId, status) => {
-  try {
-    const request = await ServiceRequest.findByPk(requestId);
-    if (request) {
-      request.status = status;
-      await request.save();
-      return request;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error updating request status:', error);
+    console.error('❌ DEBUG - Error creating service request:', error);
     throw error;
   }
 };
