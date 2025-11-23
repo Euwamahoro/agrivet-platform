@@ -110,12 +110,14 @@ const handleUssdRequest = async (req, res) => {
         ussdService.updateSession(sessionId, { state: STATE_FARMING_TIPS });
         response = ussdService.getFarmingTipsMenu(currentLanguage);
       } else if (input === MENU_OPTION_MY_REQUEST_STATUS) {
-        response = ussdService.getFeatureComingSoonMessage(
-          currentLanguage,
-          ussdService.getTranslatedMessage('menu_option_my_request_status', currentLanguage)
-        );
-        ussdService.updateSession(sessionId, { state: STATE_SUB_MENU_ACK });
-      } else if (input === MENU_OPTION_CHANGE_LANGUAGE) {
+  if (!farmer) {
+    response = ussdService.getFarmerNotRegisteredMessage(currentLanguage);
+    ussdService.updateSession(sessionId, { state: STATE_SUB_MENU_ACK });
+  } else {
+    ussdService.updateSession(sessionId, { state: STATE_MY_REQUEST_STATUS });
+    response = await ussdService.getRequestStatusDisplay(currentLanguage, phoneNumber);
+  }
+    } else if (input === MENU_OPTION_CHANGE_LANGUAGE) {
         response = ussdService.getLanguageSelectionMenu();
         ussdService.updateSession(sessionId, { state: STATE_LANGUAGE_SELECTION });
       } else if (input === MENU_OPTION_EXIT) {
@@ -140,6 +142,7 @@ const handleUssdRequest = async (req, res) => {
         ussdService.updateSession(sessionId, { state: STATE_MAIN_MENU, farmerRegData: {} });
         response = await ussdService.getDynamicMainMenu(currentLanguage, phoneNumber);
       } else {
+        response = await ussdService.getRequestStatusDisplay(currentLanguage, phoneNumber);
         response = ussdService.getTranslatedMessage('invalid_name_input', currentLanguage, { max: MAX_NAME_LENGTH });
       }
     } else if (session.state === STATE_FARMER_REG_PROVINCE) {

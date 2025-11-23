@@ -82,6 +82,35 @@ const getFarmingTipsMenu = (locale) => {
   return getTranslatedMessage('farming_tips_menu', locale);
 };
 
+// Add this method to ussdService.js
+const getRequestStatusDisplay = async (locale, phoneNumber) => {
+  const requests = await serviceRequestService.findRequestsByFarmerPhone(phoneNumber);
+  
+  if (!requests || requests.length === 0) {
+    return getTranslatedMessage('no_requests_found', locale);
+  }
+
+  let message = getTranslatedMessage('request_status_header', locale) + '\n';
+  
+  requests.forEach((request, index) => {
+    const requestNumber = index + 1;
+    const shortId = request.id.substring(0, 8);
+    const serviceType = getTranslatedMessage(
+      request.serviceType === 'agronomy' ? 'agronomy_service_name' : 'veterinary_service_name', 
+      locale
+    );
+    const status = getTranslatedMessage(`request_status_${request.status}`, locale);
+    const date = new Date(request.createdAt).toLocaleDateString(locale);
+    
+    message += `\n${requestNumber}. ${serviceType} (${shortId})\n`;
+    message += `   ${getTranslatedMessage('status', locale)}: ${status}\n`;
+    message += `   ${getTranslatedMessage('date', locale)}: ${date}\n`;
+  });
+  
+  message += `\n${getTranslatedMessage('press_zero_to_continue', locale)}`;
+  return message;
+};
+
 // New and Updated Menu Functions
 
 const getDynamicMainMenu = async (locale, phoneNumber) => {
@@ -201,4 +230,5 @@ module.exports = {
   getServiceTypeMenu,
   getIssueDescriptionPrompt,
   getFarmerNotRegisteredMessage,
+  getRequestStatusDisplay
 };

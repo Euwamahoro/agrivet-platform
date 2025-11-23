@@ -80,9 +80,18 @@ const updateRequestStatus = async (requestId, status) => {
   }
 };
 
+const findRequestsByFarmerPhone = async (farmerPhone) => {
+  return ServiceRequest.findAll({
+    where: { farmerPhone },
+    order: [['createdAt', 'DESC']],
+    limit: 5 // Show only the 5 most recent requests
+  });
+};
+
 module.exports = {
   createServiceRequest,
   findRequestById,
   findRequestsByFarmerId,
+  findRequestsByFarmerPhone,
   updateRequestStatus,
 };
