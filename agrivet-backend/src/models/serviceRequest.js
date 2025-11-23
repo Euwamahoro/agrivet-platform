@@ -14,7 +14,7 @@ const serviceRequestSchema = new mongoose.Schema({
   serviceType: {
     type: String,
     enum: ['agronomy', 'veterinary'],
-    required: true
+    required: false
   },
   description: {
     type: String,

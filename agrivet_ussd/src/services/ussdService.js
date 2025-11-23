@@ -61,7 +61,6 @@ const getLanguageSelectionMenu = () => {
   return message;
 };
 
-// Move these functions outside of getDynamicMainMenu
 
 const getServiceTypeMenu = (locale) => {
   const message = getTranslatedMessage('prompt_service_type', locale);
@@ -97,12 +96,12 @@ const getDynamicMainMenu = async (locale, phoneNumber) => {
 
   const message =
     `${getTranslatedMessage('main_menu_welcome', locale)}\n` +
-    `${mainMenuItem1}\n` +
+    `${mainMenuItem1}\n` +                           // 1. Register/Update
     `${getTranslatedMessage('menu_option_request_service', locale)}\n` +
-    `${getTranslatedMessage('menu_option_weather_info', locale)}\n` +
+    `${getTranslatedMessage('menu_option_weather_info', locale)}\n` +  
     `${getTranslatedMessage('menu_option_farming_tips', locale)}\n` +
-    `${getTranslatedMessage('menu_option_my_request_status', locale)}\n` +
-    `${getTranslatedMessage('menu_option_change_language', locale)}\n` +
+    `${getTranslatedMessage('menu_option_my_request_status', locale)}\n` + 
+    `${getTranslatedMessage('menu_option_change_language', locale)}\n` + 
     `${getTranslatedMessage('menu_option_exit', locale)}`;
   return message;
 };
