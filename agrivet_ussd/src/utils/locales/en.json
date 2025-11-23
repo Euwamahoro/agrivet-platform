@@ -14,6 +14,7 @@
   "invalid_main_menu_option": "Invalid option. Please choose an option:",
   "feature_coming_soon": "You selected %s. This feature will be fully available in the next phase. Press %s to return to Main Menu.",
   "exit_message": "Thank you for using AgriVet. Goodbye!",
+  "press 0 to go back": "Press 0 to go back to main menu",
   "prompt_farmer_name": "Please enter your full name:",
   "invalid_name_input": "Invalid name. Please enter a valid name (max {{max}} characters):",
   "prompt_province_selection": "Please select your Province:",

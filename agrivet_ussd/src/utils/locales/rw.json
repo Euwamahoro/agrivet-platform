@@ -14,6 +14,7 @@
   "invalid_main_menu_option": "Wahisemo nabi. Hitamo icyo ushaka gukora:",
   "feature_coming_soon": "Wahisemo %s. Iyi serivisi izaboneka vuba. Kanda %s kugira ngo usubire ku Murongo Mukuru.",
   "exit_message": "Murakoze gukoresha AgriVet. Mwirirwe!",
+  "press 0 to go back": "kanda 0 usubire ku murongo mukuru",
   "prompt_farmer_name": "Injira amazina yawe yose:",
   "invalid_name_input": "Izina si ryo. Injira izina ripfuye (ntirigomba kurenza inyuguti {{max}}):",
   "prompt_province_selection": "Hitamo Intara yawe:",

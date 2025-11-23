@@ -107,7 +107,7 @@ const getRequestStatusDisplay = async (locale, phoneNumber) => {
     message += `   ${getTranslatedMessage('date', locale)}: ${date}\n`;
   });
   
-  message += `\n${getTranslatedMessage('press_zero_to_continue', locale)}`;
+  message += `\n${getTranslatedMessage('press 0 to go back', locale)}`;
   return message;
 };
 
