@@ -30,21 +30,38 @@ const RequestDetails: React.FC = () => {
     }
   }, [request, navigate]);
 
+  // Add a loading state
   if (!request) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500">Request not found.</p>
-          <button
-            onClick={() => navigate('/graduate/requests')}
-            className="mt-4 text-green-600 hover:text-green-500"
-          >
-            Back to Available Requests
-          </button>
+          <p className="text-gray-500">Loading request details...</p>
         </div>
       </div>
     );
   }
+
+  // Safe function to get short ID
+  const getShortId = (id: string | undefined) => {
+    return id ? `#${id.substring(0, 8)}` : '#Unknown';
+  };
+
+  // Safe function to get farmer name
+  const getFarmerName = () => {
+    return request?.farmer?.name || 'Not specified';
+  };
+
+  // Safe function to get farmer phone
+  const getFarmerPhone = () => {
+    return request?.farmer?.phoneNumber || 'Not specified';
+  };
+
+  // Safe function to get location
+  const getLocation = () => {
+    if (!request?.location) return 'Location not specified';
+    const { cell, sector, district, province } = request.location;
+    return `${cell || ''}, ${sector || ''}, ${district || ''}, ${province || ''}`.replace(/,\s*,/g, ',').replace(/^,\s*/, '');
+  };
 
   const handleAcceptRequest = async () => {
     if (!currentGraduate?.isAvailable) {
@@ -136,20 +153,20 @@ const RequestDetails: React.FC = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Request ID</label>
-                  <p className="mt-1 text-sm text-gray-900">#{request.id.substring(0, 8)}</p>
+                  <p className="mt-1 text-sm text-gray-900">{getShortId(request.id)}</p>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Created Date</label>
                   <p className="mt-1 text-sm text-gray-900">
-                    {new Date(request.createdAt).toLocaleDateString()}
+                    {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'Unknown'}
                   </p>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Last Updated</label>
                   <p className="mt-1 text-sm text-gray-900">
-                    {new Date(request.updatedAt).toLocaleDateString()}
+                    {request.updatedAt ? new Date(request.updatedAt).toLocaleDateString() : 'Unknown'}
                   </p>
                 </div>
               </div>
@@ -157,7 +174,7 @@ const RequestDetails: React.FC = () => {
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700">Description</label>
                 <p className="mt-2 p-3 bg-gray-50 rounded-md text-sm text-gray-700">
-                  {request.description}
+                  {request.description || 'No description provided'}
                 </p>
               </div>
             </div>
@@ -172,21 +189,21 @@ const RequestDetails: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Name</label>
                   <p className="mt-1 text-sm text-gray-900">
-                    {request.farmer?.name || 'Not specified'}
+                    {getFarmerName()}
                   </p>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Phone Number</label>
                   <p className="mt-1 text-sm text-gray-900">
-                    {request.farmer?.phoneNumber || 'Not specified'}
+                    {getFarmerPhone()}
                   </p>
                 </div>
                 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700">Location</label>
                   <p className="mt-1 text-sm text-gray-900">
-                    {request.location.cell}, {request.location.sector}, {request.location.district}, {request.location.province}
+                    {getLocation()}
                   </p>
                 </div>
               </div>
