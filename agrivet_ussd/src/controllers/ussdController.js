@@ -99,18 +99,18 @@ const handleUssdRequest = async (req, res) => {
           ussdService.updateSession(sessionId, { state: STATE_REQUEST_SERVICE_TYPE, serviceRequestData: {} });
           response = ussdService.getServiceTypeMenu(currentLanguage);
         }
-      } else if (input === MENU_OPTION_WEATHER_INFO) {
-        if (!farmer) {
-          response = ussdService.getFarmerNotRegisteredMessage(currentLanguage);
-          ussdService.updateSession(sessionId, { state: STATE_SUB_MENU_ACK });
-        } else {
-          ussdService.updateSession(sessionId, { state: STATE_WEATHER_INFO });
-          response = ussdService.getWeatherInfoPrompt(currentLanguage);
-        }
-      } else if (input === MENU_OPTION_FARMING_TIPS) {
-        ussdService.updateSession(sessionId, { state: STATE_FARMING_TIPS });
-        response = ussdService.getFarmingTipsMenu(currentLanguage);
-      } else if (input === MENU_OPTION_MY_REQUEST_STATUS) {
+      } else if (input === MENU_OPTION_FARMING_TIPS) {  // This should be '3'
+  ussdService.updateSession(sessionId, { state: STATE_FARMING_TIPS });
+  response = ussdService.getFarmingTipsMenu(currentLanguage);
+} else if (input === MENU_OPTION_WEATHER_INFO) {  // This should be '4'
+  if (!farmer) {
+    response = ussdService.getFarmerNotRegisteredMessage(currentLanguage);
+    ussdService.updateSession(sessionId, { state: STATE_SUB_MENU_ACK });
+  } else {
+    ussdService.updateSession(sessionId, { state: STATE_WEATHER_INFO });
+    response = ussdService.getWeatherInfoPrompt(currentLanguage);
+  }
+} else if (input === MENU_OPTION_MY_REQUEST_STATUS) {
   if (!farmer) {
     response = ussdService.getFarmerNotRegisteredMessage(currentLanguage);
     ussdService.updateSession(sessionId, { state: STATE_SUB_MENU_ACK });
