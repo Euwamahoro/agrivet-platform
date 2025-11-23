@@ -16,10 +16,10 @@ const {
 
 const farmerService = require('./farmerService'); 
 const adminLocationService = require('./adminLocationService');
+const serviceRequestService = require('./serviceRequestService');
 
 // Add the missing constant
-const MAX_DESCRIPTION_LENGTH = 255; // or whatever value you need
-
+const MAX_DESCRIPTION_LENGTH = 255;
 const sessions = {};
 
 const getSession = (sessionId) => {
