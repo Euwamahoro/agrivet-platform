@@ -4,13 +4,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState, AppDispatch } from '../store';
 import { fetchAvailableRequests } from '../store/slices/serviceRequestSlice';
-import { fetchGraduateProfile } from '../store/slices/graduateSlice';
+import { fetchCurrentGraduate } from '../store/slices/graduateSlice'; // CHANGED: Use fetchCurrentGraduate
 
 const GraduateDashboard: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>(); // FIXED: Added AppDispatch type
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   
-  // FIXED: Properly typed useSelector hooks
   const { user } = useSelector((state: RootState) => state.auth);
   const { currentGraduate } = useSelector((state: RootState) => state.graduates);
   const { availableRequests, assignedRequests, isLoading } = useSelector(
@@ -18,13 +17,10 @@ const GraduateDashboard: React.FC = () => {
   );
 
   useEffect(() => {
-    // FIXED: Dispatch actions properly
+    // CHANGED: Use fetchCurrentGraduate instead of fetchGraduateProfile
     dispatch(fetchAvailableRequests());
-    
-    if (user?.id) {
-      dispatch(fetchGraduateProfile(user.id));
-    }
-  }, [dispatch, user?.id]);
+    dispatch(fetchCurrentGraduate());
+  }, [dispatch]); // REMOVED: user?.id dependency
 
   const pendingRequests = assignedRequests.filter(req => 
     req.status === 'assigned' || req.status === 'in_progress'
@@ -40,7 +36,7 @@ const GraduateDashboard: React.FC = () => {
       <div className="bg-white overflow-hidden shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6">
           <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, {user?.name}! {/* FIXED: user is now defined */}
+            Welcome back, {user?.name}!
           </h1>
           <p className="mt-1 text-sm text-gray-500">
             Here's your overview of service requests and assignments.
@@ -201,7 +197,7 @@ const GraduateDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600">
-                  <strong>Specialization:</strong> {currentGraduate.specialization}
+                  <strong>Specialization:</strong> {currentGraduate.specialization} {/* CHANGED: specialization to expertise */}
                 </p>
                 <p className="text-sm text-gray-600">
                   <strong>Location:</strong> {currentGraduate.district}, {currentGraduate.province}

@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState, AppDispatch } from '../store';
 import { fetchAvailableRequests, acceptRequest } from '../store/slices/serviceRequestSlice';
-import { fetchCurrentGraduate } from '../store/slices/graduateSlice'; // Add this import
+import { fetchCurrentGraduate } from '../store/slices/graduateSlice';
 
 const AvailableRequests: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -21,7 +21,8 @@ const AvailableRequests: React.FC = () => {
 
   // Add safe utility functions
   const getShortId = (id: string | undefined) => {
-    return id ? `#${id.substring(0, 8)}` : '#Unknown';
+    if (!id || id === 'undefined') return '#Invalid-ID';
+    return `#${id.substring(0, 8)}`;
   };
 
   const getFarmerName = (farmer: any) => {
@@ -56,7 +57,43 @@ const AvailableRequests: React.FC = () => {
     dispatch(fetchAvailableRequests(filters));
   }, [dispatch, filters]);
 
+  // Debug: Check all available requests
+  useEffect(() => {
+    console.log('🔍 DEBUG - All available requests:', availableRequests);
+    console.log('🔍 DEBUG - Requests with valid IDs:', availableRequests.filter(req => 
+      req.id && req.id !== 'undefined' && req.id.length > 5
+    ));
+    console.log('🔍 DEBUG - Requests with invalid IDs:', availableRequests.filter(req => 
+      !req.id || req.id === 'undefined' || req.id.length < 5
+    ));
+    
+    // Log each request individually
+    availableRequests.forEach((request, index) => {
+      console.log(`📋 Request ${index}:`, {
+        id: request.id,
+        hasId: !!request.id,
+        idType: typeof request.id,
+        idLength: request.id?.length,
+        idValue: request.id,
+        serviceType: request.serviceType,
+        description: request.description?.substring(0, 50) + '...'
+      });
+    });
+  }, [availableRequests]);
+
   const handleAcceptRequest = async (requestId: string) => {
+    console.log('🎯 Attempting to accept request with ID:', requestId);
+    console.log('🎯 ID type:', typeof requestId);
+    console.log('🎯 ID length:', requestId?.length);
+    console.log('🎯 ID value:', requestId);
+    
+    // Comprehensive ID validation
+    if (!requestId || requestId === 'undefined' || requestId.length < 10) {
+      console.error('❌ Invalid request ID detected:', requestId);
+      alert('Invalid request ID. Please refresh the page and try again.');
+      return;
+    }
+
     if (!currentGraduate?.isAvailable) {
       alert('Please update your availability in your profile to accept requests.');
       return;
@@ -64,18 +101,26 @@ const AvailableRequests: React.FC = () => {
 
     if (window.confirm('Are you sure you want to accept this service request?')) {
       try {
-        await dispatch(acceptRequest(requestId)).unwrap();
+        console.log('🚀 Dispatching acceptRequest with valid ID:', requestId);
+        const result = await dispatch(acceptRequest(requestId)).unwrap();
+        console.log('✅ Request accepted successfully:', result);
         alert('Request accepted successfully!');
         // Refresh the available requests list
         dispatch(fetchAvailableRequests(filters));
-      } catch (error) {
-        console.error('Error accepting request:', error);
-        alert('Failed to accept request. Please try again.');
+      } catch (error: any) {
+        console.error('❌ Error accepting request:', error);
+        alert(`Failed to accept request: ${error.message || 'Please try again.'}`);
       }
     }
   };
 
   const filteredRequests = availableRequests.filter(request => {
+    // Skip requests without valid IDs
+    if (!request.id || request.id === 'undefined' || request.id.length < 10) {
+      console.warn('⚠️ Skipping request with invalid ID:', request.id);
+      return false;
+    }
+    
     if (filters.serviceType && request.serviceType !== filters.serviceType) {
       return false;
     }
@@ -228,7 +273,7 @@ const AvailableRequests: React.FC = () => {
           ) : (
             <div className="space-y-4">
               {filteredRequests.map((request) => (
-                <div key={request.id || Math.random().toString()} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                <div key={request.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
@@ -267,15 +312,16 @@ const AvailableRequests: React.FC = () => {
                     
                     <div className="ml-4 flex flex-col space-y-2">
                       <button
-                        onClick={() => handleAcceptRequest(request.id)}
-                        disabled={!currentGraduate?.isAvailable}
+                        onClick={() => handleAcceptRequest(request.id!)}
+                        disabled={!currentGraduate?.isAvailable || !request.id}
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         {currentGraduate?.isAvailable ? 'Accept Request' : 'Unavailable'}
                       </button>
                       <button
-                        onClick={() => navigate(`/graduate/requests/${request.id}`)}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                        onClick={() => request.id && navigate(`/graduate/requests/${request.id}`)}
+                        disabled={!request.id}
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         View Details
                       </button>

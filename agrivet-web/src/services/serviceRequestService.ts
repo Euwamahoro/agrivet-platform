@@ -22,13 +22,30 @@ export const serviceRequestService = {
     if (filters?.serviceType) params.append('serviceType', filters.serviceType);
     if (filters?.location) params.append('location', filters.location);
     
+    console.log('📥 Fetching available requests with filters:', filters);
     const response = await api.get(`/service-requests/available?${params}`);
+    console.log('📦 Received available requests:', response.data);
     return response.data;
   },
 
   acceptRequest: async (requestId: string) => {
-    const response = await api.post(`/service-requests/${requestId}/accept`);
-    return response.data;
+    console.log('📤 Making API call to accept request:', requestId);
+    
+    if (!requestId || requestId === 'undefined') {
+      console.error('❌ Invalid request ID in service:', requestId);
+      throw new Error(`Invalid request ID: ${requestId}`);
+    }
+    
+    try {
+      console.log('🌐 Calling endpoint:', `/service-requests/${requestId}/accept`);
+      const response = await api.post(`/service-requests/${requestId}/accept`);
+      console.log('✅ Request accepted successfully in service:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ API error accepting request in service:', error);
+      console.error('❌ Error details:', error.response?.data);
+      throw error;
+    }
   },
 
   updateStatus: async (requestId: string, status: string, notes?: string) => {
