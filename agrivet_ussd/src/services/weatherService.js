@@ -1,6 +1,7 @@
 const axios = require('axios');
 const geocodingService = require('./geocodingService');
 const { Farmer } = require('../models');
+const i18n = require('../utils/i18n'); // Add i18n import
 
 class WeatherService {
   constructor() {
@@ -8,9 +9,12 @@ class WeatherService {
     this.baseURL = 'https://api.openweathermap.org/data/2.5';
   }
 
-  async getWeatherForFarmer(phoneNumber) {
+  async getWeatherForFarmer(phoneNumber, locale = 'en') {
     try {
-      console.log(`🌤️ Getting weather for farmer: ${phoneNumber}`);
+      console.log(`🌤️ Getting weather for farmer: ${phoneNumber} in ${locale}`);
+      
+      // Set the language for translations
+      i18n.setLocale(locale);
       
       // 1. Get farmer's location from database
       const farmer = await Farmer.findOne({ where: { phone_number: phoneNumber } });
@@ -32,8 +36,8 @@ class WeatherService {
         this.getForecast(coords.lat, coords.lng)
       ]);
       
-      // 4. Format for USSD
-      return this.formatWeatherForUSSD(currentWeather, forecast, farmer.district);
+      // 4. Format for USSD with translations
+      return this.formatWeatherForUSSD(currentWeather, forecast, farmer.district, locale);
       
     } catch (error) {
       console.error('❌ Error getting weather for farmer:', error.message);
@@ -81,39 +85,63 @@ class WeatherService {
       return response.data;
     } catch (error) {
       console.error('❌ Forecast API error:', error.response?.data || error.message);
-      // Return null if forecast fails, we'll still show current weather
       return null;
     }
   }
 
-  formatWeatherForUSSD(currentWeather, forecast, district) {
+  formatWeatherForUSSD(currentWeather, forecast, district, locale) {
     const main = currentWeather.main;
     const weather = currentWeather.weather[0];
     const wind = currentWeather.wind;
     
-    let message = `Weather for ${district}:\n\n`;
-    message += `Now: ${Math.round(main.temp)}°C, ${this.capitalize(weather.description)}\n`;
-    message += `Feels like: ${Math.round(main.feels_like)}°C\n`;
-    message += `Humidity: ${main.humidity}%\n`;
-    message += `Wind: ${wind.speed} m/s\n`;
+    // Set locale for translations
+    i18n.setLocale(locale);
+    
+    // Translate weather description
+    const translatedWeather = this.translateWeatherDescription(weather.description, locale);
+    
+    let message = `${i18n.__('weather_for')} ${district}:\n\n`;
+    message += `${i18n.__('now')}: ${Math.round(main.temp)}°C, ${translatedWeather}\n`;
+    message += `${i18n.__('feels_like')}: ${Math.round(main.feels_like)}°C\n`;
+    message += `${i18n.__('humidity')}: ${main.humidity}%\n`;
+    message += `${i18n.__('wind')}: ${wind.speed} m/s\n`;
     
     // Add rainfall probability if forecast data is available
     if (forecast && forecast.list && forecast.list.length > 0) {
-      const next12Hours = forecast.list.slice(0, 4); // Next 12 hours (3-hour intervals)
+      const next12Hours = forecast.list.slice(0, 4);
       const maxRainChance = Math.max(...next12Hours.map(item => 
         item.pop ? Math.round(item.pop * 100) : 0
       ));
       
-      if (maxRainChance > 0) {
-        message += `Rain chance: ${maxRainChance}%\n`;
-      } else {
-        message += `Rain chance: 0%\n`;
-      }
+      message += `${i18n.__('rain_chance')}: ${maxRainChance}%\n`;
     }
     
-    message += `\nPlan farming activities accordingly.`;
+    message += `\n${i18n.__('plan_farming_activities')}`;
     
     return `END ${message}`;
+  }
+
+  translateWeatherDescription(description, locale) {
+    i18n.setLocale(locale);
+    
+    const weatherTranslations = {
+      'clear sky': 'weather_clear_sky',
+      'few clouds': 'weather_few_clouds',
+      'scattered clouds': 'weather_scattered_clouds',
+      'broken clouds': 'weather_broken_clouds',
+      'overcast clouds': 'weather_overcast_clouds',
+      'light rain': 'weather_light_rain',
+      'moderate rain': 'weather_moderate_rain',
+      'heavy rain': 'weather_heavy_rain',
+      'thunderstorm': 'weather_thunderstorm',
+      'snow': 'weather_snow',
+      'mist': 'weather_mist',
+      'fog': 'weather_fog',
+      'drizzle': 'weather_drizzle'
+    };
+    
+    const translationKey = weatherTranslations[description] || 'weather_unknown';
+    return i18n.__(translationKey);
   }
 
   capitalize(str) {

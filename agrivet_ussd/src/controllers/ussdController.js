@@ -107,9 +107,9 @@ const handleUssdRequest = async (req, res) => {
     response = ussdService.getFarmerNotRegisteredMessage(currentLanguage);
     ussdService.updateSession(sessionId, { state: STATE_SUB_MENU_ACK });
   } else {
-    // Directly get weather without loading message
+    // Pass the current language to weather service
     ussdService.updateSession(sessionId, { state: STATE_WEATHER_INFO });
-    const weatherInfo = await weatherService.getWeatherForFarmer(phoneNumber);
+    const weatherInfo = await weatherService.getWeatherForFarmer(phoneNumber, currentLanguage);
     if (weatherInfo) {
       response = weatherInfo;
     } else {
