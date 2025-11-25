@@ -34,6 +34,7 @@ export interface Farmer {
 
 export interface ServiceRequest {
   id: string;
+  _id?: string;
   farmerId: string;
   graduateId?: string;
   serviceType: 'agronomy' | 'veterinary';

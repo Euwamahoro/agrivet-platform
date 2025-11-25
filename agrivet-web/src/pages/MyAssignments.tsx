@@ -14,10 +14,54 @@ const MyAssignments: React.FC = () => {
 
   const [statusFilter, setStatusFilter] = useState('all');
 
+  // Get the actual ID from assignment (using _id from MongoDB)
+  const getAssignmentId = (assignment: any): string => {
+    return assignment._id || assignment.id; // Prefer _id, fallback to id
+  };
+
+  // Add safe utility functions
+  const getShortId = (assignment: any) => {
+    const assignmentId = getAssignmentId(assignment);
+    if (!assignmentId || assignmentId === 'undefined') return '#Invalid-ID';
+    return `#${assignmentId.substring(0, 8)}`;
+  };
+
+  const getFarmerName = (farmer: any) => {
+    return farmer?.name || 'Farmer';
+  };
+
+  const getFarmerPhone = (farmer: any) => {
+    return farmer?.phoneNumber || 'N/A';
+  };
+
+  const getLocation = (location: any) => {
+    if (!location) return 'Location unknown';
+    return `${location.district || ''}, ${location.sector || ''}`.replace(/,\s*$/, '');
+  };
+
+  const getSafeDate = (dateString: string | undefined) => {
+    if (!dateString) return 'Unknown date';
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch (error) {
+      return 'Invalid date';
+    }
+  };
+
   useEffect(() => {
-    // In a real app, we would fetch assigned requests here
-    // dispatch(fetchMyAssignments());
-  }, [dispatch]);
+    // Debug: Check what assignments we have
+    console.log('🔍 MyAssignments - assignedRequests:', assignedRequests);
+    assignedRequests.forEach((assignment, index) => {
+      const assignmentId = getAssignmentId(assignment);
+      console.log(`📋 Assignment ${index}:`, {
+        _id: assignment._id,
+        id: assignment.id,
+        chosenId: assignmentId,
+        hasId: !!assignmentId,
+        status: assignment.status
+      });
+    });
+  }, [assignedRequests]);
 
   const handleStatusUpdate = async (requestId: string, newStatus: string, notes?: string) => {
     try {
@@ -133,10 +177,11 @@ const MyAssignments: React.FC = () => {
           ) : (
             <div className="space-y-6">
               {filteredAssignments.map((assignment) => {
+                const assignmentId = getAssignmentId(assignment);
                 const nextAction = getNextStatusAction(assignment.status);
                 
                 return (
-                  <div key={assignment.id} className="border border-gray-200 rounded-lg p-6">
+                  <div key={assignmentId} className="border border-gray-200 rounded-lg p-6">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-3">
@@ -149,12 +194,12 @@ const MyAssignments: React.FC = () => {
                             {assignment.serviceType === 'agronomy' ? '🌱 Agronomy' : '🐄 Veterinary'}
                           </span>
                           <span className="text-sm text-gray-500">
-                            #{assignment.id.substring(0, 8)}
+                            {getShortId(assignment)}
                           </span>
                         </div>
                         
                         <h4 className="text-lg font-medium text-gray-900">
-                          Service for {assignment.farmer?.name || 'Farmer'}
+                          Service for {getFarmerName(assignment.farmer)}
                         </h4>
                         
                         <p className="mt-2 text-gray-600">
@@ -163,16 +208,16 @@ const MyAssignments: React.FC = () => {
                         
                         <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-500">
                           <div>
-                            <strong>Location:</strong> {assignment.location.district}, {assignment.location.sector}
+                            <strong>Location:</strong> {getLocation(assignment.location)}
                           </div>
                           <div>
-                            <strong>Farmer Contact:</strong> {assignment.farmer?.phoneNumber || 'N/A'}
+                            <strong>Farmer Contact:</strong> {getFarmerPhone(assignment.farmer)}
                           </div>
                           <div>
-                            <strong>Assigned:</strong> {new Date(assignment.createdAt).toLocaleDateString()}
+                            <strong>Assigned:</strong> {getSafeDate(assignment.createdAt)}
                           </div>
                           <div>
-                            <strong>Last Updated:</strong> {new Date(assignment.updatedAt).toLocaleDateString()}
+                            <strong>Last Updated:</strong> {getSafeDate(assignment.updatedAt)}
                           </div>
                         </div>
                       </div>
@@ -180,7 +225,7 @@ const MyAssignments: React.FC = () => {
                       <div className="ml-4 flex flex-col space-y-2">
                         {nextAction && (
                           <button
-                            onClick={() => handleStatusUpdate(assignment.id, nextAction.nextStatus)}
+                            onClick={() => handleStatusUpdate(assignmentId, nextAction.nextStatus)}
                             className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${nextAction.color} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
                           >
                             {nextAction.label}
@@ -192,7 +237,7 @@ const MyAssignments: React.FC = () => {
                             onClick={() => {
                               const notes = prompt('Please provide service notes:');
                               if (notes !== null) {
-                                handleStatusUpdate(assignment.id, 'completed', notes);
+                                handleStatusUpdate(assignmentId, 'completed', notes);
                               }
                             }}
                             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
@@ -202,8 +247,9 @@ const MyAssignments: React.FC = () => {
                         )}
                         
                         <button
-                          onClick={() => navigate(`/graduate/requests/${assignment.id}`)}
-                          className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          onClick={() => assignmentId && navigate(`/graduate/requests/${assignmentId}`)}
+                          disabled={!assignmentId}
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           View Details
                         </button>
