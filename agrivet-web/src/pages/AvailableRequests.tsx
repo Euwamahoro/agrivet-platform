@@ -19,10 +19,16 @@ const AvailableRequests: React.FC = () => {
     location: '',
   });
 
+  // Get the actual ID from request (using _id from MongoDB)
+  const getRequestId = (request: any): string => {
+    return request._id || request.id; // Prefer _id, fallback to id
+  };
+
   // Add safe utility functions
-  const getShortId = (id: string | undefined) => {
-    if (!id || id === 'undefined') return '#Invalid-ID';
-    return `#${id.substring(0, 8)}`;
+  const getShortId = (request: any) => {
+    const requestId = getRequestId(request);
+    if (!requestId || requestId === 'undefined') return '#Invalid-ID';
+    return `#${requestId.substring(0, 8)}`;
   };
 
   const getFarmerName = (farmer: any) => {
@@ -60,21 +66,17 @@ const AvailableRequests: React.FC = () => {
   // Debug: Check all available requests
   useEffect(() => {
     console.log('🔍 DEBUG - All available requests:', availableRequests);
-    console.log('🔍 DEBUG - Requests with valid IDs:', availableRequests.filter(req => 
-      req.id && req.id !== 'undefined' && req.id.length > 5
-    ));
-    console.log('🔍 DEBUG - Requests with invalid IDs:', availableRequests.filter(req => 
-      !req.id || req.id === 'undefined' || req.id.length < 5
-    ));
     
-    // Log each request individually
+    // Check what IDs we have
     availableRequests.forEach((request, index) => {
+      const requestId = getRequestId(request);
       console.log(`📋 Request ${index}:`, {
-        id: request.id,
-        hasId: !!request.id,
-        idType: typeof request.id,
-        idLength: request.id?.length,
-        idValue: request.id,
+        _id: request._id,
+        id: request._id,
+        chosenId: requestId,
+        hasId: !!requestId,
+        idType: typeof requestId,
+        idLength: requestId?.length,
         serviceType: request.serviceType,
         description: request.description?.substring(0, 50) + '...'
       });
@@ -115,9 +117,11 @@ const AvailableRequests: React.FC = () => {
   };
 
   const filteredRequests = availableRequests.filter(request => {
+    const requestId = getRequestId(request);
+    
     // Skip requests without valid IDs
-    if (!request.id || request.id === 'undefined' || request.id.length < 10) {
-      console.warn('⚠️ Skipping request with invalid ID:', request.id);
+    if (!requestId || requestId === 'undefined' || requestId.length < 10) {
+      console.warn('⚠️ Skipping request with invalid ID:', requestId);
       return false;
     }
     
@@ -272,72 +276,75 @@ const AvailableRequests: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredRequests.map((request) => (
-                <div key={request.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                          request.serviceType === 'agronomy' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {request.serviceType === 'agronomy' ? '🌱 Agronomy' : '🐄 Veterinary'}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {getShortId(request.id)}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {getSafeDate(request.createdAt)}
-                        </span>
+              {filteredRequests.map((request) => {
+                const requestId = getRequestId(request);
+                return (
+                  <div key={requestId} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                            request.serviceType === 'agronomy' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {request.serviceType === 'agronomy' ? '🌱 Agronomy' : '🐄 Veterinary'}
+                          </span>
+                          <span className="text-sm text-gray-500">
+                            {getShortId(request)}
+                          </span>
+                          <span className="text-sm text-gray-500">
+                            {getSafeDate(request.createdAt)}
+                          </span>
+                        </div>
+                        
+                        <h4 className="mt-2 text-lg font-medium text-gray-900">
+                          Service Request from {getFarmerName(request.farmer)}
+                        </h4>
+                        
+                        <p className="mt-2 text-gray-600">
+                          {request.description || 'No description provided'}
+                        </p>
+                        
+                        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-500">
+                          <div>
+                            <strong>Location:</strong> {getLocation(request.location)}
+                          </div>
+                          <div>
+                            <strong>Contact:</strong> {getFarmerPhone(request.farmer)}
+                          </div>
+                        </div>
                       </div>
                       
-                      <h4 className="mt-2 text-lg font-medium text-gray-900">
-                        Service Request from {getFarmerName(request.farmer)}
-                      </h4>
-                      
-                      <p className="mt-2 text-gray-600">
-                        {request.description || 'No description provided'}
-                      </p>
-                      
-                      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-500">
-                        <div>
-                          <strong>Location:</strong> {getLocation(request.location)}
-                        </div>
-                        <div>
-                          <strong>Contact:</strong> {getFarmerPhone(request.farmer)}
-                        </div>
+                      <div className="ml-4 flex flex-col space-y-2">
+                        <button
+                          onClick={() => handleAcceptRequest(requestId)}
+                          disabled={!currentGraduate?.isAvailable || !requestId}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {currentGraduate?.isAvailable ? 'Accept Request' : 'Unavailable'}
+                        </button>
+                        <button
+                          onClick={() => requestId && navigate(`/graduate/requests/${requestId}`)}
+                          disabled={!requestId}
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          View Details
+                        </button>
                       </div>
                     </div>
                     
-                    <div className="ml-4 flex flex-col space-y-2">
-                      <button
-                        onClick={() => handleAcceptRequest(request.id!)}
-                        disabled={!currentGraduate?.isAvailable || !request.id}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {currentGraduate?.isAvailable ? 'Accept Request' : 'Unavailable'}
-                      </button>
-                      <button
-                        onClick={() => request.id && navigate(`/graduate/requests/${request.id}`)}
-                        disabled={!request.id}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        View Details
-                      </button>
-                    </div>
+                    {/* Show availability warning for this specific request */}
+                    {!currentGraduate?.isAvailable && (
+                      <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                        <p className="text-sm text-yellow-800">
+                          ⚠️ You are currently marked as unavailable. Update your availability in your profile to accept requests.
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  
-                  {/* Show availability warning for this specific request */}
-                  {!currentGraduate?.isAvailable && (
-                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                      <p className="text-sm text-yellow-800">
-                        ⚠️ You are currently marked as unavailable. Update your availability in your profile to accept requests.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

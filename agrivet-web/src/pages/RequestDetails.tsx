@@ -20,7 +20,7 @@ const RequestDetails: React.FC = () => {
 
   // Find the request in either available or assigned requests
   const request = [...availableRequests, ...assignedRequests].find(
-    req => req.id === requestId
+    req => req._id === requestId
   );
 
   useEffect(() => {
@@ -72,7 +72,7 @@ const RequestDetails: React.FC = () => {
     if (window.confirm('Are you sure you want to accept this service request?')) {
       setIsSubmitting(true);
       try {
-        await dispatch(acceptRequest(request.id)).unwrap();
+        await dispatch(acceptRequest(request._id)).unwrap();
         alert('Request accepted successfully!');
         navigate('/graduate/assignments');
       } catch (error) {
@@ -87,7 +87,7 @@ const RequestDetails: React.FC = () => {
     setIsSubmitting(true);
     try {
       await dispatch(updateRequestStatus({ 
-        requestId: request.id, 
+        requestId: request._id, 
         status: newStatus, 
         notes: serviceNotes 
       })).unwrap();
@@ -118,8 +118,8 @@ const RequestDetails: React.FC = () => {
     );
   };
 
-  const isAvailableRequest = availableRequests.some(req => req.id === requestId);
-  const isMyAssignment = assignedRequests.some(req => req.id === requestId);
+  const isAvailableRequest = availableRequests.some(req => req._id === requestId);
+  const isMyAssignment = assignedRequests.some(req => req._id === requestId);
 
   return (
     <div className="space-y-6">
@@ -153,7 +153,7 @@ const RequestDetails: React.FC = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Request ID</label>
-                  <p className="mt-1 text-sm text-gray-900">{getShortId(request.id)}</p>
+                  <p className="mt-1 text-sm text-gray-900">{getShortId(request._id)}</p>
                 </div>
                 
                 <div>

@@ -53,11 +53,11 @@ const serviceRequestSlice = createSlice({
         state.availableRequests = action.payload;
       })
       .addCase(acceptRequest.fulfilled, (state, action: PayloadAction<ServiceRequest>) => {
-        state.availableRequests = state.availableRequests.filter(req => req.id !== action.payload.id);
+        state.availableRequests = state.availableRequests.filter(req => req._id !== action.payload._id);
         state.assignedRequests.push(action.payload);
       })
       .addCase(updateRequestStatus.fulfilled, (state, action: PayloadAction<ServiceRequest>) => {
-        const index = state.assignedRequests.findIndex(req => req.id === action.payload.id);
+        const index = state.assignedRequests.findIndex(req => req._id === action.payload._id);
         if (index !== -1) {
           state.assignedRequests[index] = action.payload;
         }
