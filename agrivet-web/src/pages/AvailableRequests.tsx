@@ -19,6 +19,33 @@ const AvailableRequests: React.FC = () => {
     location: '',
   });
 
+  // Add safe utility functions
+  const getShortId = (id: string | undefined) => {
+    return id ? `#${id.substring(0, 8)}` : '#Unknown';
+  };
+
+  const getFarmerName = (farmer: any) => {
+    return farmer?.name || 'Farmer';
+  };
+
+  const getFarmerPhone = (farmer: any) => {
+    return farmer?.phoneNumber || 'N/A';
+  };
+
+  const getLocation = (location: any) => {
+    if (!location) return 'Location unknown';
+    return `${location.district || ''}, ${location.sector || ''}`.replace(/,\s*$/, '');
+  };
+
+  const getSafeDate = (dateString: string | undefined) => {
+    if (!dateString) return 'Unknown date';
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch (error) {
+      return 'Invalid date';
+    }
+  };
+
   useEffect(() => {
     // Fetch current graduate to check availability status
     console.log('🔄 Fetching current graduate profile...');
@@ -52,7 +79,7 @@ const AvailableRequests: React.FC = () => {
     if (filters.serviceType && request.serviceType !== filters.serviceType) {
       return false;
     }
-    if (filters.location && !request.location.district.toLowerCase().includes(filters.location.toLowerCase())) {
+    if (filters.location && !request.location?.district?.toLowerCase().includes(filters.location.toLowerCase())) {
       return false;
     }
     return true;
@@ -201,7 +228,7 @@ const AvailableRequests: React.FC = () => {
           ) : (
             <div className="space-y-4">
               {filteredRequests.map((request) => (
-                <div key={request.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                <div key={request.id || Math.random().toString()} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
@@ -213,27 +240,27 @@ const AvailableRequests: React.FC = () => {
                           {request.serviceType === 'agronomy' ? '🌱 Agronomy' : '🐄 Veterinary'}
                         </span>
                         <span className="text-sm text-gray-500">
-                          #{request.id.substring(0, 8)}
+                          {getShortId(request.id)}
                         </span>
                         <span className="text-sm text-gray-500">
-                          {new Date(request.createdAt).toLocaleDateString()}
+                          {getSafeDate(request.createdAt)}
                         </span>
                       </div>
                       
                       <h4 className="mt-2 text-lg font-medium text-gray-900">
-                        Service Request from {request.farmer?.name || 'Farmer'}
+                        Service Request from {getFarmerName(request.farmer)}
                       </h4>
                       
                       <p className="mt-2 text-gray-600">
-                        {request.description}
+                        {request.description || 'No description provided'}
                       </p>
                       
                       <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-500">
                         <div>
-                          <strong>Location:</strong> {request.location.district}, {request.location.sector}
+                          <strong>Location:</strong> {getLocation(request.location)}
                         </div>
                         <div>
-                          <strong>Contact:</strong> {request.farmer?.phoneNumber || 'N/A'}
+                          <strong>Contact:</strong> {getFarmerPhone(request.farmer)}
                         </div>
                       </div>
                     </div>
