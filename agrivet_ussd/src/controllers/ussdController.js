@@ -102,13 +102,21 @@ const handleUssdRequest = async (req, res) => {
       } else if (input === MENU_OPTION_FARMING_TIPS) {  // This should be '3'
   ussdService.updateSession(sessionId, { state: STATE_FARMING_TIPS });
   response = ussdService.getFarmingTipsMenu(currentLanguage);
-} else if (input === MENU_OPTION_WEATHER_INFO) {  // This should be '4'
+} else if (input === MENU_OPTION_WEATHER_INFO) {
   if (!farmer) {
     response = ussdService.getFarmerNotRegisteredMessage(currentLanguage);
     ussdService.updateSession(sessionId, { state: STATE_SUB_MENU_ACK });
   } else {
+    // Directly get weather without loading message
     ussdService.updateSession(sessionId, { state: STATE_WEATHER_INFO });
-    response = ussdService.getWeatherInfoPrompt(currentLanguage);
+    const weatherInfo = await weatherService.getWeatherForFarmer(phoneNumber);
+    if (weatherInfo) {
+      response = weatherInfo;
+    } else {
+      response = ussdService.getTranslatedMessage('weather_info_unavailable', currentLanguage);
+    }
+    responseType = USSD_END;
+    ussdService.clearSession(sessionId);
   }
 } else if (input === MENU_OPTION_MY_REQUEST_STATUS) {
   if (!farmer) {

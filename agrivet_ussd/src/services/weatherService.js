@@ -26,11 +26,14 @@ class WeatherService {
         throw new Error('Could not get coordinates for location');
       }
 
-      // 3. Get weather data using Current Weather API (free)
-      const weatherData = await this.getCurrentWeather(coords.lat, coords.lng);
+      // 3. Get current weather AND forecast for rain data
+      const [currentWeather, forecast] = await Promise.all([
+        this.getCurrentWeather(coords.lat, coords.lng),
+        this.getForecast(coords.lat, coords.lng)
+      ]);
       
       // 4. Format for USSD
-      return this.formatWeatherForUSSD(weatherData, farmer.district);
+      return this.formatWeatherForUSSD(currentWeather, forecast, farmer.district);
       
     } catch (error) {
       console.error('❌ Error getting weather for farmer:', error.message);
@@ -46,7 +49,7 @@ class WeatherService {
         params: {
           lat,
           lon,
-          units: 'metric', // Celsius
+          units: 'metric',
           appid: this.apiKey
         },
         timeout: 10000
@@ -55,24 +58,62 @@ class WeatherService {
       console.log('✅ Current weather data received');
       return response.data;
     } catch (error) {
-      console.error('❌ Weather API error:', error.response?.data || error.message);
+      console.error('❌ Current weather API error:', error.response?.data || error.message);
       throw new Error('Weather service unavailable');
     }
   }
 
-  formatWeatherForUSSD(weatherData, district) {
-    const main = weatherData.main;
-    const weather = weatherData.weather[0];
-    const wind = weatherData.wind;
+  async getForecast(lat, lon) {
+    try {
+      console.log(`📡 Fetching forecast for coordinates: ${lat}, ${lon}`);
+      
+      const response = await axios.get(`${this.baseURL}/forecast`, {
+        params: {
+          lat,
+          lon,
+          units: 'metric',
+          appid: this.apiKey
+        },
+        timeout: 10000
+      });
+      
+      console.log('✅ Forecast data received');
+      return response.data;
+    } catch (error) {
+      console.error('❌ Forecast API error:', error.response?.data || error.message);
+      // Return null if forecast fails, we'll still show current weather
+      return null;
+    }
+  }
+
+  formatWeatherForUSSD(currentWeather, forecast, district) {
+    const main = currentWeather.main;
+    const weather = currentWeather.weather[0];
+    const wind = currentWeather.wind;
     
-    return `END Weather for ${district}:
-
-Now: ${Math.round(main.temp)}°C, ${this.capitalize(weather.description)}
-Feels like: ${Math.round(main.feels_like)}°C
-Humidity: ${main.humidity}%
-Wind: ${wind.speed} m/s
-
-Plan farming activities accordingly.`;
+    let message = `Weather for ${district}:\n\n`;
+    message += `Now: ${Math.round(main.temp)}°C, ${this.capitalize(weather.description)}\n`;
+    message += `Feels like: ${Math.round(main.feels_like)}°C\n`;
+    message += `Humidity: ${main.humidity}%\n`;
+    message += `Wind: ${wind.speed} m/s\n`;
+    
+    // Add rainfall probability if forecast data is available
+    if (forecast && forecast.list && forecast.list.length > 0) {
+      const next12Hours = forecast.list.slice(0, 4); // Next 12 hours (3-hour intervals)
+      const maxRainChance = Math.max(...next12Hours.map(item => 
+        item.pop ? Math.round(item.pop * 100) : 0
+      ));
+      
+      if (maxRainChance > 0) {
+        message += `Rain chance: ${maxRainChance}%\n`;
+      } else {
+        message += `Rain chance: 0%\n`;
+      }
+    }
+    
+    message += `\nPlan farming activities accordingly.`;
+    
+    return `END ${message}`;
   }
 
   capitalize(str) {

@@ -74,9 +74,6 @@ const getIssueDescriptionPrompt = (locale) => {
 const getFarmerNotRegisteredMessage = (locale) => {
   return getTranslatedMessage('farmer_not_registered', locale);
 };
-const getWeatherInfoPrompt = (locale) => {
-  return getTranslatedMessage('weather_info_loading', locale);
-};
 
 const getFarmingTipsMenu = (locale) => {
   return getTranslatedMessage('farming_tips_menu', locale);

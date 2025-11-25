@@ -43,7 +43,6 @@
   "veterinary_service_name": "Veterinary",
   "menu_option_weather_info": "3. Weather Information",
   "menu_option_farming_tips": "4. Farming Tips",
-  "weather_info_loading": "CON Getting weather information for your area...",
   "weather_info_unavailable": "END Weather information is currently unavailable for your area.",
   "weather_service_error": "END Weather service temporarily unavailable. Please try again later.",
   "farming_tips_menu": "CON Choose farming tips:\n1. Maize planting guide\n2. Bean disease control\n3. Soil improvement\n4. Animal health tips\n0. Back to Main Menu",
