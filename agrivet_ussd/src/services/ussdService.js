@@ -228,6 +228,5 @@ module.exports = {
   getIssueDescriptionPrompt,
   getFarmerNotRegisteredMessage,
   getRequestStatusDisplay,
-  getWeatherInfoPrompt,
   getFarmingTipsMenu
 };
