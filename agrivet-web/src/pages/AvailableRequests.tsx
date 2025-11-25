@@ -19,9 +19,9 @@ const AvailableRequests: React.FC = () => {
     location: '',
   });
 
-  // Get the actual ID from request (using _id from MongoDB)
+  // Get the actual ID from request (using id from MongoDB)
   const getRequestId = (request: any): string => {
-    return request._id || request._id; // Prefer _id, fallback to id
+    return request.id; // Use id directly - this is what the API provides
   };
 
   // Add safe utility functions
@@ -67,12 +67,22 @@ const AvailableRequests: React.FC = () => {
   useEffect(() => {
     console.log('🔍 DEBUG - All available requests:', availableRequests);
     
-    // Check what IDs we have
+    // Check what IDs we have - FIXED: Look for id instead of id
+    const requestsWithValidIds = availableRequests.filter(req => 
+      req.id && req.id !== 'undefined' && req.id.length > 5
+    );
+    const requestsWithInvalidIds = availableRequests.filter(req => 
+      !req.id || req.id === 'undefined' || req.id.length < 5
+    );
+    
+    console.log('🔍 DEBUG - Requests with valid id:', requestsWithValidIds);
+    console.log('🔍 DEBUG - Requests with invalid id:', requestsWithInvalidIds);
+    
+    // Log each request individually - FIXED: Check id field
     availableRequests.forEach((request, index) => {
       const requestId = getRequestId(request);
       console.log(`📋 Request ${index}:`, {
-        _id: request._id,
-        id: request._id,
+        id: request.id,
         chosenId: requestId,
         hasId: !!requestId,
         idType: typeof requestId,

@@ -33,7 +33,7 @@ export interface Farmer {
 }
 
 export interface ServiceRequest {
-  _id: string;
+  id: string;
   farmerId: string;
   graduateId?: string;
   serviceType: 'agronomy' | 'veterinary';

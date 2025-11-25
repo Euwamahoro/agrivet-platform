@@ -154,7 +154,7 @@ const GraduateDashboard: React.FC = () => {
           ) : (
             <div className="space-y-4">
               {availableRequests.slice(0, 3).map((request) => (
-                <div key={request._id} className="border rounded-lg p-4">
+                <div key={request.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div>
                       <h4 className="font-medium text-gray-900">
@@ -175,7 +175,7 @@ const GraduateDashboard: React.FC = () => {
                     </span>
                   </div>
                   <button
-                    onClick={() => navigate(`/graduate/requests/${request._id}`)}
+                    onClick={() => navigate(`/graduate/requests/${request.id}`)}
                     className="mt-3 text-sm text-green-600 hover:text-green-500"
                   >
                     View Details
