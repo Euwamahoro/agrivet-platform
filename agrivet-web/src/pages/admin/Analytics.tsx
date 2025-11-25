@@ -2,14 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { getAnalytics, AnalyticsData } from '../../services/adminServices';
 
 interface EnhancedAnalyticsData extends AnalyticsData {
-  platformKPIs?: {
-    totalRequests: number;
-    completedRequests: number;
-    activeRequests: number;
-    completionRate: number;
-    avgResolutionTime: number;
-    weeklyGrowth: number;
-  };
   requestsByDistrict?: Array<{ _id: string; count: number }>;
   requestsByTime?: {
     daily: Array<{ date: string; count: number }>;
@@ -20,12 +12,6 @@ interface EnhancedAnalyticsData extends AnalyticsData {
     bestDistrict: { name: string; count: number };
     bestProvince: { name: string; count: number };
     highestServiceType: { name: string; count: number };
-  };
-  userStatistics?: {
-    totalFarmers: number;
-    totalGraduates: number;
-    newRegistrationsThisMonth: number;
-    activeUsersThisMonth: number;
   };
 }
 
@@ -59,14 +45,10 @@ const Analytics: React.FC = () => {
     return isLikelyDistricts ? 'District' : 'Province';
   };
 
-  // Format growth indicator
-  const renderGrowthIndicator = (growth: number) => {
-    if (growth > 0) {
-      return <span className="text-green-600 text-sm">↑ {growth}%</span>;
-    } else if (growth < 0) {
-      return <span className="text-red-600 text-sm">↓ {Math.abs(growth)}%</span>;
-    }
-    return <span className="text-gray-600 text-sm">→ 0%</span>;
+  // Format regional data display name
+  const formatRegionalName = (name: string) => {
+    const label = getRegionalLabel();
+    return `${name} ${label}`;
   };
 
   if (loading) {
@@ -99,116 +81,7 @@ const Analytics: React.FC = () => {
         </button>
       </div>
 
-      {/* Platform KPIs */}
-      {analytics.platformKPIs && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Requests</p>
-                <p className="text-2xl font-bold text-gray-900">{analytics.platformKPIs.totalRequests}</p>
-              </div>
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-            </div>
-            {renderGrowthIndicator(analytics.platformKPIs.weeklyGrowth)}
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Completion Rate</p>
-                <p className="text-2xl font-bold text-gray-900">{analytics.platformKPIs.completionRate}%</p>
-              </div>
-              <div className="p-3 bg-green-100 rounded-lg">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 mt-2">
-              {analytics.platformKPIs.completedRequests} of {analytics.platformKPIs.totalRequests} completed
-            </p>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Active Requests</p>
-                <p className="text-2xl font-bold text-gray-900">{analytics.platformKPIs.activeRequests}</p>
-              </div>
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 mt-2">Need attention</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Avg. Resolution</p>
-                <p className="text-2xl font-bold text-gray-900">{analytics.platformKPIs.avgResolutionTime}d</p>
-              </div>
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 mt-2">Average time to complete</p>
-          </div>
-        </div>
-      )}
-
-      {/* User Statistics */}
-      {analytics.userStatistics && (
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-              User Statistics
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 border border-gray-200 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">
-                  {analytics.userStatistics.totalFarmers}
-                </div>
-                <div className="text-sm text-gray-600">Total Farmers</div>
-              </div>
-              
-              <div className="text-center p-4 border border-gray-200 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">
-                  {analytics.userStatistics.totalGraduates}
-                </div>
-                <div className="text-sm text-gray-600">Total Graduates</div>
-              </div>
-              
-              <div className="text-center p-4 border border-gray-200 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">
-                  {analytics.userStatistics.newRegistrationsThisMonth}
-                </div>
-                <div className="text-sm text-gray-600">New Registrations</div>
-                <div className="text-xs text-gray-500">This Month</div>
-              </div>
-              
-              <div className="text-center p-4 border border-gray-200 rounded-lg">
-                <div className="text-2xl font-bold text-orange-600">
-                  {analytics.userStatistics.activeUsersThisMonth}
-                </div>
-                <div className="text-sm text-gray-600">Active Users</div>
-                <div className="text-xs text-gray-500">This Month</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Performance Overview */}
+      {/* Top Performance Overview */}
       {analytics.topPerforming && (
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
@@ -322,13 +195,13 @@ const Analytics: React.FC = () => {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {analytics.requestsByTime[timeFrame]?.map((item, index) => (
+              {analytics.requestsByTime[timeFrame]?.map((item: { date?: string; week?: string; month?: string; count: number }, index) => (
                 <div key={index} className="text-center p-4 border border-gray-200 rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">
                     {item.count}
                   </div>
                   <div className="text-sm text-gray-600">
-                    {'date' in item ? item.date : 'week' in item ? item.week : item.month}
+                    {timeFrame === 'daily' ? item.date : timeFrame === 'weekly' ? item.week : item.month}
                   </div>
                 </div>
               ))}
@@ -355,7 +228,7 @@ const Analytics: React.FC = () => {
                   {item.count}
                 </div>
                 <div className="text-sm text-gray-600 capitalize">
-                  {item._id} {regionalLabel}
+                  {formatRegionalName(item._id)}
                 </div>
               </div>
             ))}
@@ -363,12 +236,12 @@ const Analytics: React.FC = () => {
         </div>
       </div>
 
-      {/* District Distribution */}
+      {/* Additional District Breakdown if available */}
       {analytics.requestsByDistrict && analytics.requestsByDistrict.length > 0 && (
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-              Top Districts
+              District Distribution
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {analytics.requestsByDistrict.map((item) => (
