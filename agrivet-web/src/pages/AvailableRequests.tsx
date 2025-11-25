@@ -21,7 +21,7 @@ const AvailableRequests: React.FC = () => {
 
   // Get the actual ID from request (using _id from MongoDB)
   const getRequestId = (request: any): string => {
-    return request._id || request.id; // Prefer _id, fallback to id
+    return request._id || request._id; // Prefer _id, fallback to id
   };
 
   // Add safe utility functions
