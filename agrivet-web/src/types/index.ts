@@ -9,7 +9,7 @@ export interface User {
 }
 
 export interface Graduate extends User {
-  specialization: 'agronomy' | 'veterinary' | 'both';
+  expertise: 'agronomy' | 'veterinary' | 'both';
   province: string;
   district: string;
   sector: string;

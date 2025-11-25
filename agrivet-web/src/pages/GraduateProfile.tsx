@@ -66,7 +66,7 @@ const GraduateProfile: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Expertise</label>
-              <p className="mt-1 text-sm text-gray-900 capitalize">{currentGraduate.specialization}</p>
+              <p className="mt-1 text-sm text-gray-900 capitalize">{currentGraduate.expertise}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Experience</label>

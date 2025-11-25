@@ -197,7 +197,7 @@ const GraduateDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600">
-                  <strong>Specialization:</strong> {currentGraduate.specialization} {/* CHANGED: specialization to expertise */}
+                  <strong>Specialization:</strong> {currentGraduate.expertise} {/* CHANGED: specialization to expertise */}
                 </p>
                 <p className="text-sm text-gray-600">
                   <strong>Location:</strong> {currentGraduate.district}, {currentGraduate.province}

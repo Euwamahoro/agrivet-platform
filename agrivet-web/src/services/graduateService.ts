@@ -17,9 +17,9 @@ api.interceptors.request.use((config) => {
 });
 
 export const graduateService = {
-  getGraduates: async (filters?: { specialization?: string; location?: string }) => {
+  getGraduates: async (filters?: { expertise?: string; location?: string }) => {
     const params = new URLSearchParams();
-    if (filters?.specialization) params.append('specialization', filters.specialization);
+    if (filters?.expertise) params.append('specialization', filters.expertise);
     if (filters?.location) params.append('location', filters.location);
     
     const response = await api.get(`/graduates?${params}`);
