@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState, AppDispatch } from '../store';
 import { fetchAvailableRequests, acceptRequest } from '../store/slices/serviceRequestSlice';
+import { fetchCurrentGraduate } from '../store/slices/graduateSlice'; // Add this import
 
 const AvailableRequests: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -19,15 +20,29 @@ const AvailableRequests: React.FC = () => {
   });
 
   useEffect(() => {
+    // Fetch current graduate to check availability status
+    console.log('🔄 Fetching current graduate profile...');
+    dispatch(fetchCurrentGraduate());
+    
+    // Fetch available requests
+    console.log('🔄 Fetching available requests...');
     dispatch(fetchAvailableRequests(filters));
   }, [dispatch, filters]);
 
   const handleAcceptRequest = async (requestId: string) => {
+    if (!currentGraduate?.isAvailable) {
+      alert('Please update your availability in your profile to accept requests.');
+      return;
+    }
+
     if (window.confirm('Are you sure you want to accept this service request?')) {
       try {
         await dispatch(acceptRequest(requestId)).unwrap();
         alert('Request accepted successfully!');
+        // Refresh the available requests list
+        dispatch(fetchAvailableRequests(filters));
       } catch (error) {
+        console.error('Error accepting request:', error);
         alert('Failed to accept request. Please try again.');
       }
     }
@@ -43,6 +58,12 @@ const AvailableRequests: React.FC = () => {
     return true;
   });
 
+  // Debug log to check current graduate data
+  useEffect(() => {
+    console.log('📊 Current Graduate Data:', currentGraduate);
+    console.log('📊 Is Available:', currentGraduate?.isAvailable);
+  }, [currentGraduate]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -52,6 +73,43 @@ const AvailableRequests: React.FC = () => {
           <p className="mt-1 text-sm text-gray-500">
             Browse and accept service requests from farmers in your area
           </p>
+          
+          {/* Availability Status Banner */}
+          {currentGraduate && (
+            <div className={`mt-4 p-3 rounded-md ${
+              currentGraduate.isAvailable 
+                ? 'bg-green-50 border border-green-200' 
+                : 'bg-yellow-50 border border-yellow-200'
+            }`}>
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  {currentGraduate.isAvailable ? (
+                    <span className="text-green-400">✅</span>
+                  ) : (
+                    <span className="text-yellow-400">⚠️</span>
+                  )}
+                </div>
+                <div className="ml-3">
+                  <p className={`text-sm font-medium ${
+                    currentGraduate.isAvailable ? 'text-green-800' : 'text-yellow-800'
+                  }`}>
+                    {currentGraduate.isAvailable 
+                      ? 'You are available to accept new requests' 
+                      : 'You are not available for new requests'
+                    }
+                  </p>
+                  <p className={`text-sm ${
+                    currentGraduate.isAvailable ? 'text-green-700' : 'text-yellow-700'
+                  }`}>
+                    {currentGraduate.isAvailable 
+                      ? 'You can accept service requests from farmers.'
+                      : 'Update your availability in your profile to accept requests.'
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -109,12 +167,20 @@ const AvailableRequests: React.FC = () => {
             <h3 className="text-lg font-medium text-gray-900">
               {filteredRequests.length} Request{filteredRequests.length !== 1 ? 's' : ''} Available
             </h3>
-            <button
-              onClick={() => dispatch(fetchAvailableRequests(filters))}
-              className="text-sm text-green-600 hover:text-green-500"
-            >
-              Refresh
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => dispatch(fetchCurrentGraduate())}
+                className="text-sm text-blue-600 hover:text-blue-500"
+              >
+                Refresh Availability
+              </button>
+              <button
+                onClick={() => dispatch(fetchAvailableRequests(filters))}
+                className="text-sm text-green-600 hover:text-green-500"
+              >
+                Refresh Requests
+              </button>
+            </div>
           </div>
 
           {isLoading ? (
@@ -176,19 +242,20 @@ const AvailableRequests: React.FC = () => {
                       <button
                         onClick={() => handleAcceptRequest(request.id)}
                         disabled={!currentGraduate?.isAvailable}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
-                        Accept Request
+                        {currentGraduate?.isAvailable ? 'Accept Request' : 'Unavailable'}
                       </button>
                       <button
                         onClick={() => navigate(`/graduate/requests/${request.id}`)}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
                       >
                         View Details
                       </button>
                     </div>
                   </div>
                   
+                  {/* Show availability warning for this specific request */}
                   {!currentGraduate?.isAvailable && (
                     <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                       <p className="text-sm text-yellow-800">

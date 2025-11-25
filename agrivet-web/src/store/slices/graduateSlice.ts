@@ -17,6 +17,15 @@ export const fetchGraduates = createAsyncThunk(
   }
 );
 
+// ADD THIS: Fetch current logged-in graduate
+export const fetchCurrentGraduate = createAsyncThunk(
+  'graduates/fetchCurrent',
+  async () => {
+    const response = await graduateService.getCurrentGraduate();
+    return response;
+  }
+);
+
 export const fetchGraduateProfile = createAsyncThunk(
   'graduates/fetchProfile',
   async (graduateId: string) => {
@@ -48,6 +57,10 @@ const graduateSlice = createSlice({
     clearCurrentGraduate: (state) => {
       state.currentGraduate = null;
     },
+    // ADD THIS: Set current graduate directly (useful after login)
+    setCurrentGraduate: (state, action: PayloadAction<Graduate>) => {
+      state.currentGraduate = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -57,6 +70,21 @@ const graduateSlice = createSlice({
       .addCase(fetchGraduates.fulfilled, (state, action: PayloadAction<Graduate[]>) => {
         state.isLoading = false;
         state.graduates = action.payload;
+      })
+      .addCase(fetchGraduates.rejected, (state) => {
+        state.isLoading = false;
+      })
+      // ADD THIS: Handle fetchCurrentGraduate
+      .addCase(fetchCurrentGraduate.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(fetchCurrentGraduate.fulfilled, (state, action: PayloadAction<Graduate>) => {
+        state.isLoading = false;
+        state.currentGraduate = action.payload;
+      })
+      .addCase(fetchCurrentGraduate.rejected, (state) => {
+        state.isLoading = false;
+        // Keep the current graduate if it exists, or leave as null
       })
       .addCase(fetchGraduateProfile.fulfilled, (state, action: PayloadAction<Graduate>) => {
         state.currentGraduate = action.payload;
@@ -73,9 +101,14 @@ const graduateSlice = createSlice({
         if (state.currentGraduate) {
           state.currentGraduate.isAvailable = action.payload.isAvailable;
         }
+        // Also update in the graduates list if exists
+        const index = state.graduates.findIndex(g => g.id === action.payload.id);
+        if (index !== -1) {
+          state.graduates[index] = action.payload;
+        }
       });
   },
 });
 
-export const { clearCurrentGraduate } = graduateSlice.actions;
+export const { clearCurrentGraduate, setCurrentGraduate } = graduateSlice.actions;
 export default graduateSlice.reducer;

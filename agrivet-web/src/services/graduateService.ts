@@ -26,6 +26,12 @@ export const graduateService = {
     return response.data;
   },
 
+  // ADD THIS: Get current logged-in graduate - uses /profile endpoint
+  getCurrentGraduate: async (): Promise<Graduate> => {
+    const response = await api.get('/graduates/profile');
+    return response.data;
+  },
+
   getGraduateProfile: async (graduateId: string) => {
     const response = await api.get(`/graduates/${graduateId}`);
     return response.data;
