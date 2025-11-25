@@ -4,144 +4,255 @@ const Graduate = require('../models/Graduate');
 const Farmer = require('../models/Farmer');
 const ServiceRequest = require('../models/serviceRequest');
 
-exports.getPlatformStats = async (req, res) => {
+// ... keep all your existing functions (getPlatformStats, getUsers, etc.) ...
+
+exports.getAnalytics = async (req, res) => {
   try {
-    // Get real statistics from database
-    const totalFarmers = await Farmer.countDocuments();
-    const totalGraduates = await Graduate.countDocuments();
-    const activeRequests = await ServiceRequest.countDocuments({ 
-      status: { $in: ['pending', 'assigned', 'in_progress'] } 
-    });
-    const completedServices = await ServiceRequest.countDocuments({ 
-      status: 'completed' 
-    });
-    const pendingRegistrations = await User.countDocuments({ 
-      isActive: false 
-    });
+    // Execute all analytics queries in parallel for better performance
+    const [
+      serviceRequestsByType,
+      requestsByStatus,
+      requestsByProvince,
+      requestsByDistrict,
+      requestsByTime,
+      topPerforming,
+      platformKPIs,
+      userStatistics
+    ] = await Promise.all([
+      getServiceRequestsByType(),
+      getRequestsByStatus(),
+      getRequestsByProvince(),
+      getRequestsByDistrict(),
+      getRequestsOverTime(),
+      getTopPerformingData(),
+      getPlatformKPIs(),
+      getUserStatistics()
+    ]);
 
     res.json({
-      totalFarmers,
-      totalGraduates,
-      activeRequests,
-      completedServices,
-      pendingRegistrations,
-      revenueThisMonth: 0 // Placeholder for future payment integration
+      // Overview KPIs
+      platformKPIs,
+      
+      // Service Metrics
+      serviceRequestsByType,
+      requestsByStatus,
+      
+      // Regional Distribution
+      requestsByProvince,
+      requestsByDistrict,
+      topPerforming,
+      
+      // Time-based Trends
+      requestsByTime,
+      
+      // User Statistics
+      userStatistics
     });
   } catch (error) {
-    console.error('Error fetching platform stats:', error);
-    res.status(500).json({ error: 'Failed to fetch platform statistics' });
+    console.error('Error fetching analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics' });
   }
 };
 
-exports.getUsers = async (req, res) => {
-  try {
-    const { role, page = 1, limit = 10 } = req.query;
-    
-    let filter = {};
-    if (role) filter.role = role;
+// Helper function for Service Requests by Type
+async function getServiceRequestsByType() {
+  return await ServiceRequest.aggregate([
+    {
+      $group: {
+        _id: '$serviceType',
+        count: { $sum: 1 }
+      }
+    },
+    { $sort: { count: -1 } }
+  ]);
+}
 
-    const users = await User.find(filter)
-      .select('-password')
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+// Helper function for Requests by Status
+async function getRequestsByStatus() {
+  return await ServiceRequest.aggregate([
+    {
+      $group: {
+        _id: '$status',
+        count: { $sum: 1 }
+      }
+    },
+    { $sort: { count: -1 } }
+  ]);
+}
 
-    const total = await User.countDocuments(filter);
+// Helper function for Requests by Province (with null handling)
+async function getRequestsByProvince() {
+  return await ServiceRequest.aggregate([
+    {
+      $match: {
+        province: { $ne: null, $ne: '' }
+      }
+    },
+    {
+      $group: {
+        _id: '$province',
+        count: { $sum: 1 }
+      }
+    },
+    { $sort: { count: -1 } }
+  ]);
+}
 
-    res.json({
-      users,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      total
-    });
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ error: 'Failed to fetch users' });
-  }
-};
+// Helper function for Requests by District
+async function getRequestsByDistrict() {
+  return await ServiceRequest.aggregate([
+    {
+      $match: {
+        district: { $ne: null, $ne: '' }
+      }
+    },
+    {
+      $group: {
+        _id: '$district',
+        count: { $sum: 1 }
+      }
+    },
+    { $sort: { count: -1 } },
+    { $limit: 10 } // Top 10 districts only
+  ]);
+}
 
-exports.getGraduates = async (req, res) => {
-  try {
-    const graduates = await Graduate.find()
-      .populate('user', 'name phoneNumber email isActive')
-      .sort({ createdAt: -1 });
-
-    res.json(graduates);
-  } catch (error) {
-    console.error('Error fetching graduates:', error);
-    res.status(500).json({ error: 'Failed to fetch graduates' });
-  }
-};
-
-exports.getFarmers = async (req, res) => {
-  try {
-    const farmers = await Farmer.find()
-      .populate('user', 'name phoneNumber email isActive')
-      .sort({ createdAt: -1 });
-
-    res.json(farmers);
-  } catch (error) {
-    console.error('Error fetching farmers:', error);
-    res.status(500).json({ error: 'Failed to fetch farmers' });
-  }
-};
-
-exports.getServiceRequests = async (req, res) => {
-  try {
-    const { status, page = 1, limit = 10 } = req.query;
-    
-    let filter = {};
-    if (status) filter.status = status;
-
-    const requests = await ServiceRequest.find(filter)
-      .populate('farmer', 'province district sector cell')
-      .populate('farmer.user', 'name phoneNumber')
-      .populate('graduate', 'expertise province district')
-      .populate('graduate.user', 'name phoneNumber')
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-
-    const total = await ServiceRequest.countDocuments(filter);
-
-    res.json({
-      requests,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      total
-    });
-  } catch (error) {
-    console.error('Error fetching service requests:', error);
-    res.status(500).json({ error: 'Failed to fetch service requests' });
-  }
-};
-
-exports.updateUserStatus = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { isActive } = req.body;
-
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { isActive },
-      { new: true }
-    ).select('-password');
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+// Helper function for Platform KPIs
+async function getPlatformKPIs() {
+  const totalRequests = await ServiceRequest.countDocuments();
+  const completedRequests = await ServiceRequest.countDocuments({ status: 'completed' });
+  const activeRequests = await ServiceRequest.countDocuments({ 
+    status: { $in: ['pending', 'assigned', 'in_progress'] } 
+  });
+  
+  // Calculate completion rate (avoid division by zero)
+  const completionRate = totalRequests > 0 ? (completedRequests / totalRequests) * 100 : 0;
+  
+  // Calculate average resolution time (in days)
+  const resolutionStats = await ServiceRequest.aggregate([
+    {
+      $match: {
+        status: 'completed',
+        createdAt: { $exists: true },
+        updatedAt: { $exists: true }
+      }
+    },
+    {
+      $project: {
+        resolutionTime: {
+          $divide: [
+            { $subtract: ['$updatedAt', '$createdAt'] },
+            1000 * 60 * 60 * 24 // Convert to days
+          ]
+        }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        avgResolutionTime: { $avg: '$resolutionTime' }
+      }
     }
+  ]);
 
-    res.json({ 
-      message: `User ${isActive ? 'activated' : 'deactivated'} successfully`,
-      user 
-    });
-  } catch (error) {
-    console.error('Error updating user status:', error);
-    res.status(500).json({ error: 'Failed to update user status' });
-  }
-};
+  const avgResolutionTime = resolutionStats.length > 0 ? resolutionStats[0].avgResolutionTime : 0;
 
-// Helper function to get requests over time
+  // Get this week vs last week growth
+  const now = new Date();
+  const startOfThisWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+  const startOfLastWeek = new Date(startOfThisWeek);
+  startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
+
+  const thisWeekRequests = await ServiceRequest.countDocuments({
+    createdAt: { $gte: startOfThisWeek }
+  });
+
+  const lastWeekRequests = await ServiceRequest.countDocuments({
+    createdAt: { 
+      $gte: startOfLastWeek,
+      $lt: startOfThisWeek
+    }
+  });
+
+  const weeklyGrowth = lastWeekRequests > 0 
+    ? ((thisWeekRequests - lastWeekRequests) / lastWeekRequests) * 100 
+    : 0;
+
+  return {
+    totalRequests,
+    completedRequests,
+    activeRequests,
+    completionRate: Math.round(completionRate),
+    avgResolutionTime: Math.round(avgResolutionTime * 10) / 10, // 1 decimal place
+    weeklyGrowth: Math.round(weeklyGrowth * 10) / 10
+  };
+}
+
+// Helper function for Top Performing Data
+async function getTopPerformingData() {
+  // Get best province
+  const [bestProvinceResult, bestDistrictResult, highestServiceTypeResult] = await Promise.all([
+    ServiceRequest.aggregate([
+      {
+        $match: {
+          province: { $ne: null, $ne: '' }
+        }
+      },
+      {
+        $group: {
+          _id: '$province',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 1 }
+    ]),
+    ServiceRequest.aggregate([
+      {
+        $match: {
+          district: { $ne: null, $ne: '' }
+        }
+      },
+      {
+        $group: {
+          _id: '$district',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 1 }
+    ]),
+    ServiceRequest.aggregate([
+      {
+        $group: {
+          _id: '$serviceType',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 1 }
+    ])
+  ]);
+
+  return {
+    bestProvince: bestProvinceResult.length > 0 ? {
+      name: bestProvinceResult[0]._id,
+      count: bestProvinceResult[0].count
+    } : { name: 'No data', count: 0 },
+    
+    bestDistrict: bestDistrictResult.length > 0 ? {
+      name: bestDistrictResult[0]._id,
+      count: bestDistrictResult[0].count
+    } : { name: 'No data', count: 0 },
+    
+    highestServiceType: highestServiceTypeResult.length > 0 ? {
+      name: highestServiceTypeResult[0]._id,
+      count: highestServiceTypeResult[0].count
+    } : { name: 'No data', count: 0 }
+  };
+}
+
+// Helper function for Requests Over Time
 async function getRequestsOverTime() {
   const now = new Date();
   
@@ -152,9 +263,7 @@ async function getRequestsOverTime() {
   const daily = await ServiceRequest.aggregate([
     {
       $match: {
-        createdAt: {
-          $gte: sevenDaysAgo
-        }
+        createdAt: { $gte: sevenDaysAgo }
       }
     },
     {
@@ -191,7 +300,10 @@ async function getRequestsOverTime() {
     {
       $group: {
         _id: {
-          $week: '$createdAt'
+          $dateToString: {
+            format: '%Y-%U',
+            date: '$createdAt'
+          }
         },
         count: { $sum: 1 }
       }
@@ -199,7 +311,7 @@ async function getRequestsOverTime() {
     { $sort: { _id: 1 } },
     {
       $project: {
-        week: { $concat: ['Week ', { $toString: '$_id' }] },
+        week: '$_id',
         count: 1,
         _id: 0
       }
@@ -244,144 +356,29 @@ async function getRequestsOverTime() {
   };
 }
 
-// Helper function to get top performing data
-async function getTopPerformingData() {
-  // Get best province
-  const bestProvinceResult = await ServiceRequest.aggregate([
-    {
-      $match: {
-        province: { $ne: null, $ne: '' }
+// Helper function for User Statistics
+async function getUserStatistics() {
+  const [totalFarmers, totalGraduates, newRegistrationsThisMonth] = await Promise.all([
+    Farmer.countDocuments(),
+    Graduate.countDocuments(),
+    User.countDocuments({
+      createdAt: {
+        $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
       }
-    },
-    {
-      $group: {
-        _id: '$province',
-        count: { $sum: 1 }
-      }
-    },
-    { $sort: { count: -1 } },
-    { $limit: 1 }
+    })
   ]);
 
-  const bestProvince = bestProvinceResult.length > 0 ? {
-    name: bestProvinceResult[0]._id || 'Unknown',
-    count: bestProvinceResult[0].count
-  } : { name: 'No data', count: 0 };
-
-  // Get best district
-  const bestDistrictResult = await ServiceRequest.aggregate([
-    {
-      $match: {
-        district: { $ne: null, $ne: '' }
-      }
-    },
-    {
-      $group: {
-        _id: '$district',
-        count: { $sum: 1 }
-      }
-    },
-    { $sort: { count: -1 } },
-    { $limit: 1 }
-  ]);
-
-  const bestDistrict = bestDistrictResult.length > 0 ? {
-    name: bestDistrictResult[0]._id || 'Unknown',
-    count: bestDistrictResult[0].count
-  } : { name: 'No data', count: 0 };
-
-  // Get highest service type
-  const highestServiceTypeResult = await ServiceRequest.aggregate([
-    {
-      $group: {
-        _id: '$serviceType',
-        count: { $sum: 1 }
-      }
-    },
-    { $sort: { count: -1 } },
-    { $limit: 1 }
-  ]);
-
-  const highestServiceType = highestServiceTypeResult.length > 0 ? {
-    name: highestServiceTypeResult[0]._id || 'Unknown',
-    count: highestServiceTypeResult[0].count
-  } : { name: 'No data', count: 0 };
+  // Calculate active users (users who created service requests this month)
+  const activeUsersThisMonth = await ServiceRequest.distinct('farmer', {
+    createdAt: {
+      $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    }
+  });
 
   return {
-    bestProvince,
-    bestDistrict,
-    highestServiceType
+    totalFarmers,
+    totalGraduates,
+    newRegistrationsThisMonth,
+    activeUsersThisMonth: activeUsersThisMonth.length
   };
 }
-
-exports.getAnalytics = async (req, res) => {
-  try {
-    // Get analytics data for charts and reports
-    const serviceRequestsByType = await ServiceRequest.aggregate([
-      {
-        $group: {
-          _id: '$serviceType',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    const requestsByStatus = await ServiceRequest.aggregate([
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    const requestsByProvince = await ServiceRequest.aggregate([
-      {
-        $match: {
-          province: { $ne: null, $ne: '' }
-        }
-      },
-      {
-        $group: {
-          _id: '$province',
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { count: -1 } }
-    ]);
-
-    // NEW: Get requests by district
-    const requestsByDistrict = await ServiceRequest.aggregate([
-      {
-        $match: {
-          district: { $ne: null, $ne: '' }
-        }
-      },
-      {
-        $group: {
-          _id: '$district',
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { count: -1 } }
-    ]);
-
-    // NEW: Get requests over time
-    const requestsByTime = await getRequestsOverTime();
-
-    // NEW: Get top performing regions and services
-    const topPerforming = await getTopPerformingData();
-
-    res.json({
-      serviceRequestsByType,
-      requestsByStatus,
-      requestsByProvince,
-      requestsByDistrict,
-      requestsByTime,
-      topPerforming
-    });
-  } catch (error) {
-    console.error('Error fetching analytics:', error);
-    res.status(500).json({ error: 'Failed to fetch analytics' });
-  }
-};
