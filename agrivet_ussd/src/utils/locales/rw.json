@@ -46,10 +46,10 @@
   "weather_for": "Ibihe byo mu kirere kuri",
   "now": "Ubu",
   "feels_like": "Bimeze nk",
-  "humidity": "Ubwunyu",
+  "humidity": "Ubuhehere",
   "wind": "Umuyaga",
-  "rain_chance": "Amahirwe yo kubura imvura",
-  "plan_farming_activities": "Tegeka ibikorwa by'ubuhinzi bikurikije ibi bihe.",
+  "rain_chance": "Amahirwe yo kubona imvura",
+  "plan_farming_activities": "Tegura ibikorwa by'ubuhinzi bikurikije ibi bihe.",
   
   "weather_clear_sky": "ikirere gisanzwe",
   "weather_few_clouds": "ibicu bike",
