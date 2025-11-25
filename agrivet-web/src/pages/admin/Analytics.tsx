@@ -1,9 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { getAnalytics, AnalyticsData } from '../../services/adminServices';
 
+interface EnhancedAnalyticsData extends AnalyticsData {
+  requestsByDistrict?: Array<{ _id: string; count: number }>;
+  requestsByTime?: {
+    daily: Array<{ date: string; count: number }>;
+    weekly: Array<{ week: string; count: number }>;
+    monthly: Array<{ month: string; count: number }>;
+  };
+  topPerforming?: {
+    bestDistrict: { name: string; count: number };
+    bestProvince: { name: string; count: number };
+    highestServiceType: { name: string; count: number };
+  };
+}
+
 const Analytics: React.FC = () => {
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analytics, setAnalytics] = useState<EnhancedAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [timeFrame, setTimeFrame] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
 
   useEffect(() => {
     fetchAnalytics();
@@ -19,6 +34,21 @@ const Analytics: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to determine if regional data shows provinces or districts
+  const getRegionalLabel = () => {
+    if (!analytics?.requestsByProvince) return 'Region';
+    
+    // If we have more than 5 entries, it's likely districts not provinces
+    const isLikelyDistricts = analytics.requestsByProvince.length > 5;
+    return isLikelyDistricts ? 'District' : 'Province';
+  };
+
+  // Format regional data display name
+  const formatRegionalName = (name: string) => {
+    const label = getRegionalLabel();
+    return `${name} ${label}`;
   };
 
   if (loading) {
@@ -37,6 +67,8 @@ const Analytics: React.FC = () => {
     );
   }
 
+  const regionalLabel = getRegionalLabel();
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -49,13 +81,55 @@ const Analytics: React.FC = () => {
         </button>
       </div>
 
+      {/* Top Performance Overview */}
+      {analytics.topPerforming && (
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+              Performance Overview
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 border border-gray-200 rounded-lg bg-blue-50">
+                <div className="text-2xl font-bold text-blue-600">
+                  {analytics.topPerforming.bestProvince.count}
+                </div>
+                <div className="text-sm text-gray-600">Top Province</div>
+                <div className="text-lg font-semibold text-gray-900 capitalize">
+                  {analytics.topPerforming.bestProvince.name}
+                </div>
+              </div>
+              
+              <div className="text-center p-4 border border-gray-200 rounded-lg bg-green-50">
+                <div className="text-2xl font-bold text-green-600">
+                  {analytics.topPerforming.bestDistrict.count}
+                </div>
+                <div className="text-sm text-gray-600">Top District</div>
+                <div className="text-lg font-semibold text-gray-900 capitalize">
+                  {analytics.topPerforming.bestDistrict.name}
+                </div>
+              </div>
+              
+              <div className="text-center p-4 border border-gray-200 rounded-lg bg-purple-50">
+                <div className="text-2xl font-bold text-purple-600">
+                  {analytics.topPerforming.highestServiceType.count}
+                </div>
+                <div className="text-sm text-gray-600">Most Requested Service</div>
+                <div className="text-lg font-semibold text-gray-900 capitalize">
+                  {analytics.topPerforming.highestServiceType.name}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Service Requests by Type */}
       <div className="bg-white shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
             Service Requests by Type
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {analytics.serviceRequestsByType.map((item) => (
               <div key={item._id} className="flex justify-between items-center p-4 border border-gray-200 rounded-lg">
                 <span className="text-sm font-medium text-gray-900 capitalize">
@@ -96,26 +170,94 @@ const Analytics: React.FC = () => {
         </div>
       </div>
 
+      {/* Requests Over Time */}
+      {analytics.requestsByTime && (
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">
+                Requests Over Time
+              </h3>
+              <div className="flex space-x-2">
+                {(['daily', 'weekly', 'monthly'] as const).map((frame) => (
+                  <button
+                    key={frame}
+                    onClick={() => setTimeFrame(frame)}
+                    className={`px-3 py-1 text-sm rounded-md ${
+                      timeFrame === frame
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    {frame.charAt(0).toUpperCase() + frame.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {analytics.requestsByTime[timeFrame]?.map((item: { date?: string; week?: string; month?: string; count: number }, index) => (
+                <div key={index} className="text-center p-4 border border-gray-200 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {item.count}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {timeFrame === 'daily' ? item.date : timeFrame === 'weekly' ? item.week : item.month}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Regional Distribution */}
       <div className="bg-white shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-            Regional Distribution
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg leading-6 font-medium text-gray-900">
+              Regional Distribution
+            </h3>
+            <div className="text-sm text-gray-500">
+              Showing: {regionalLabel}s
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {analytics.requestsByProvince.map((item) => (
               <div key={item._id} className="text-center p-4 border border-gray-200 rounded-lg">
                 <div className="text-2xl font-bold text-blue-600">
                   {item.count}
                 </div>
-                <div className="text-sm text-gray-600">
-                  {item._id} Province
+                <div className="text-sm text-gray-600 capitalize">
+                  {formatRegionalName(item._id)}
                 </div>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Additional District Breakdown if available */}
+      {analytics.requestsByDistrict && analytics.requestsByDistrict.length > 0 && (
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+              District Distribution
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {analytics.requestsByDistrict.map((item) => (
+                <div key={item._id} className="text-center p-4 border border-gray-200 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">
+                    {item.count}
+                  </div>
+                  <div className="text-sm text-gray-600 capitalize">
+                    {item._id} District
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
