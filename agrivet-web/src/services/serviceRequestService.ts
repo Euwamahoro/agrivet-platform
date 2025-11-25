@@ -25,7 +25,15 @@ export const serviceRequestService = {
     console.log('📥 Fetching available requests with filters:', filters);
     const response = await api.get(`/service-requests/available?${params}`);
     console.log('📦 Received available requests:', response.data);
-    return response.data;
+    
+    // Transform the data: copy _id to id for frontend compatibility
+    const transformedData = response.data.map((request: any) => ({
+      ...request,
+      id: request._id // Copy _id to id for frontend
+    }));
+    
+    console.log('🔄 Transformed requests:', transformedData);
+    return transformedData;
   },
 
   acceptRequest: async (requestId: string) => {
