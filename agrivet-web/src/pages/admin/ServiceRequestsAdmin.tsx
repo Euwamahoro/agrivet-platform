@@ -16,7 +16,7 @@ const ServiceRequestsAdmin: React.FC = () => {
     try {
       setLoading(true);
       const data = await getServiceRequests(filterStatus, currentPage);
-      console.log('Fetched requests:', data.requests);
+      console.log('Fetched requests:', data.requests); // Debug log
       setRequests(data.requests);
       setTotalPages(data.totalPages);
     } catch (error) {
@@ -35,33 +35,6 @@ const ServiceRequestsAdmin: React.FC = () => {
       case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
-  };
-
-  // Helper function to get graduate name safely
-  const getGraduateName = (graduate: ServiceRequest['graduate']): string => {
-    if (!graduate) return 'Unknown Graduate';
-    
-    if (typeof graduate === 'object') {
-      if ('user' in graduate && graduate.user?.name) {
-        return String(graduate.user.name);
-      }
-      if ('name' in graduate && graduate.name) {
-        return String(graduate.name);
-      }
-    }
-    
-    return 'Unknown Graduate';
-  };
-
-  // Helper function to get graduate expertise safely
-  const getGraduateExpertise = (graduate: ServiceRequest['graduate']): string => {
-    if (!graduate || typeof graduate !== 'object') return 'both';
-    
-    if ('expertise' in graduate && graduate.expertise) {
-      return graduate.expertise;
-    }
-    
-    return 'both';
   };
 
   if (loading) {
@@ -133,6 +106,17 @@ const ServiceRequestsAdmin: React.FC = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
+                    {/* FIXED: Use nested farmer.user fields */}
+                    {request.farmer?.user?.name || 'Unknown Farmer'}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {/* FIXED: Use nested farmer.user phoneNumber field */}
+                    {request.farmer?.user?.phoneNumber || 'No Phone'}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {/* FIXED: Safe access to location */}
                     {request.location?.district || 'Unknown District'}
                   </div>
                   <div className="text-sm text-gray-500">
@@ -143,10 +127,11 @@ const ServiceRequestsAdmin: React.FC = () => {
                   {request.graduate ? (
                     <>
                       <div className="text-sm text-gray-900">
-                        {getGraduateName(request.graduate)}
+                        {/* FIXED: Use nested graduate.user.name */}
+                        {request.graduate?.user?.name || 'Unknown Graduate'}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {getGraduateExpertise(request.graduate)}
+                        {request.graduate?.expertise || 'No Expertise'}
                       </div>
                     </>
                   ) : (
