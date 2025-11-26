@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { getUsers, updateUserStatus, User, getFarmers, getGraduates } from '../../services/adminServices';
 
 interface CombinedUser extends User {
-  // Additional fields from farmers and graduates
   expertise?: string;
   province?: string;
   district?: string;
@@ -13,80 +12,145 @@ interface CombinedUser extends User {
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<CombinedUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
   const [filterRole, setFilterRole] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showInactive, setShowInactive] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAllUsers();
-  }, [currentPage, filterRole, showInactive]);
+  }, [filterRole, showInactive]);
 
   const fetchAllUsers = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // Fetch base users
-      const usersData = await getUsers(filterRole, currentPage);
+      console.log('🔄 Fetching all users data...');
       
-      // Fetch additional data for farmers and graduates
-      let enrichedUsers = [...usersData.users];
-      
-      if (!filterRole || filterRole === 'farmer') {
-        try {
-          const farmersData = await getFarmers();
-          enrichedUsers = enrichedUsers.map(user => {
-            if (user.role === 'farmer') {
-              const farmerDetails = farmersData.find((f: any) => f.user?._id === user._id);
-              return {
-                ...user,
-                province: farmerDetails?.province,
-                district: farmerDetails?.district,
-                totalRequests: farmerDetails?.totalRequests,
-                completedRequests: farmerDetails?.completedRequests
-              };
-            }
-            return user;
-          });
-        } catch (error) {
-          console.error('Error fetching farmer details:', error);
-        }
-      }
-      
-      if (!filterRole || filterRole === 'graduate') {
-        try {
-          const graduatesData = await getGraduates();
-          enrichedUsers = enrichedUsers.map(user => {
-            if (user.role === 'graduate') {
-              const graduateDetails = graduatesData.find((g: any) => g.user?._id === user._id);
-              return {
-                ...user,
-                expertise: graduateDetails?.expertise,
-                province: graduateDetails?.province,
-                district: graduateDetails?.district
-              };
-            }
-            return user;
-          });
-        } catch (error) {
-          console.error('Error fetching graduate details:', error);
-        }
+      // Fetch ALL data from all endpoints
+      const [usersResponse, farmersResponse, graduatesResponse] = await Promise.all([
+        getUsers('', 1, 1000), // Get ALL users without role filter
+        getFarmers(),
+        getGraduates()
+      ]);
+
+      console.log('📊 API Response Summary:', {
+        totalUsers: usersResponse?.users?.length || 0,
+        totalFarmers: farmersResponse?.length || 0,
+        totalGraduates: graduatesResponse?.length || 0
+      });
+
+      let combinedUsers: CombinedUser[] = [];
+
+      // 1. Start with base users
+      if (usersResponse && usersResponse.users) {
+        combinedUsers = [...usersResponse.users];
+        console.log('✅ Loaded base users:', usersResponse.users.length);
       }
 
-      // Filter by active/inactive status
+      // 2. Add farmers - ensure we include ALL farmers
+      if (farmersResponse && Array.isArray(farmersResponse)) {
+        farmersResponse.forEach((farmer: any) => {
+          // Check if this farmer already exists in combinedUsers
+          const existingUserIndex = combinedUsers.findIndex(u => u._id === farmer.user?._id);
+          
+          if (existingUserIndex !== -1) {
+            // Update existing user with farmer details
+            combinedUsers[existingUserIndex] = {
+              ...combinedUsers[existingUserIndex],
+              province: farmer.province,
+              district: farmer.district,
+              totalRequests: farmer.totalRequests,
+              completedRequests: farmer.completedRequests
+            };
+          } else {
+            // Create new user entry from farmer data
+            const newFarmerUser: CombinedUser = {
+              _id: farmer.user?._id || farmer._id,
+              name: farmer.user?.name || farmer.name || 'Unknown Farmer',
+              phoneNumber: farmer.user?.phoneNumber || farmer.phoneNumber || 'N/A',
+              email: farmer.user?.email || farmer.email,
+              role: 'farmer',
+              isActive: farmer.user?.isActive ?? farmer.isActive ?? true,
+              createdAt: farmer.user?.createdAt || farmer.createdAt || new Date().toISOString(),
+              province: farmer.province,
+              district: farmer.district,
+              totalRequests: farmer.totalRequests,
+              completedRequests: farmer.completedRequests
+            };
+            combinedUsers.push(newFarmerUser);
+          }
+        });
+        console.log('✅ Processed farmers:', farmersResponse.length);
+      }
+
+      // 3. Add graduates - ensure we include ALL graduates
+      if (graduatesResponse && Array.isArray(graduatesResponse)) {
+        graduatesResponse.forEach((graduate: any) => {
+          // Check if this graduate already exists in combinedUsers
+          const existingUserIndex = combinedUsers.findIndex(u => u._id === graduate.user?._id);
+          
+          if (existingUserIndex !== -1) {
+            // Update existing user with graduate details
+            combinedUsers[existingUserIndex] = {
+              ...combinedUsers[existingUserIndex],
+              expertise: graduate.expertise,
+              province: graduate.province,
+              district: graduate.district
+            };
+          } else {
+            // Create new user entry from graduate data
+            const newGraduateUser: CombinedUser = {
+              _id: graduate.user?._id || graduate._id,
+              name: graduate.user?.name || graduate.name || 'Unknown Graduate',
+              phoneNumber: graduate.user?.phoneNumber || graduate.phoneNumber || 'N/A',
+              email: graduate.user?.email || graduate.email,
+              role: 'graduate',
+              isActive: graduate.user?.isActive ?? graduate.isActive ?? true,
+              createdAt: graduate.user?.createdAt || graduate.createdAt || new Date().toISOString(),
+              expertise: graduate.expertise,
+              province: graduate.province,
+              district: graduate.district
+            };
+            combinedUsers.push(newGraduateUser);
+          }
+        });
+        console.log('✅ Processed graduates:', graduatesResponse.length);
+      }
+
+      // Remove any potential duplicates based on _id
+      const uniqueUsers = combinedUsers.filter((user, index, self) => 
+        index === self.findIndex(u => u._id === user._id)
+      );
+
+      console.log('🎯 Final combined users:', uniqueUsers.length);
+      console.log('📈 Role distribution:', {
+        admins: uniqueUsers.filter(u => u.role === 'admin').length,
+        graduates: uniqueUsers.filter(u => u.role === 'graduate').length,
+        farmers: uniqueUsers.filter(u => u.role === 'farmer').length
+      });
+
+      // Apply role filter if specified
+      let filteredUsers = uniqueUsers;
+      if (filterRole) {
+        filteredUsers = uniqueUsers.filter(user => user.role === filterRole);
+        console.log(`🔍 Filtered by role '${filterRole}':`, filteredUsers.length);
+      }
+
+      // Apply active/inactive filter
       if (!showInactive) {
-        enrichedUsers = enrichedUsers.filter(user => user.isActive);
+        filteredUsers = filteredUsers.filter(user => user.isActive);
+        console.log('👥 Active users only:', filteredUsers.length);
       }
 
-      setUsers(enrichedUsers);
-      setTotalPages(usersData.totalPages);
-      setTotal(usersData.total);
+      setUsers(filteredUsers);
+      
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('❌ Error fetching users:', error);
+      setError('Failed to load users. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -96,7 +160,9 @@ const UserManagement: React.FC = () => {
     try {
       setActionLoading(userId);
       await updateUserStatus(userId, !currentStatus);
-      fetchAllUsers(); // Refresh the list
+      // Refresh the list after update
+      await fetchAllUsers();
+      alert(`User ${!currentStatus ? 'activated' : 'deactivated'} successfully!`);
     } catch (error) {
       console.error('Error updating user status:', error);
       alert('Failed to update user status. Please try again.');
@@ -143,7 +209,7 @@ const UserManagement: React.FC = () => {
       );
       
       setSelectedUsers([]);
-      fetchAllUsers();
+      await fetchAllUsers();
       alert(`Successfully ${action}d ${selectedUsers.length} user(s)`);
     } catch (error) {
       console.error('Error performing bulk action:', error);
@@ -159,12 +225,13 @@ const UserManagement: React.FC = () => {
     user.phoneNumber.includes(searchTerm) ||
     (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (user.expertise && user.expertise.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (user.province && user.province.toLowerCase().includes(searchTerm.toLowerCase()))
+    (user.province && user.province.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (user.district && user.district.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Calculate statistics
+  // Calculate statistics from ALL users (not filtered by search)
   const stats = {
-    total: total,
+    total: users.length,
     active: users.filter(u => u.isActive).length,
     inactive: users.filter(u => !u.isActive).length,
     admins: users.filter(u => u.role === 'admin').length,
@@ -201,6 +268,22 @@ const UserManagement: React.FC = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="text-red-500 text-xl mb-4">❌ {error}</div>
+          <button
+            onClick={fetchAllUsers}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -211,12 +294,13 @@ const UserManagement: React.FC = () => {
         </div>
         <button
           onClick={fetchAllUsers}
-          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center space-x-2"
+          disabled={loading}
+          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center space-x-2 disabled:opacity-50"
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          <span>Refresh</span>
+          <span>{loading ? 'Refreshing...' : 'Refresh'}</span>
         </button>
       </div>
 
@@ -248,6 +332,7 @@ const UserManagement: React.FC = () => {
         </div>
       </div>
 
+      {/* Rest of the component remains the same as your original */}
       {/* Filters and Search */}
       <div className="bg-white shadow rounded-lg p-4">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
@@ -274,10 +359,7 @@ const UserManagement: React.FC = () => {
           <div className="flex flex-wrap gap-3">
             <select
               value={filterRole}
-              onChange={(e) => {
-                setFilterRole(e.target.value);
-                setCurrentPage(1);
-              }}
+              onChange={(e) => setFilterRole(e.target.value)}
               className="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             >
               <option value="">All Roles</option>
@@ -497,71 +579,6 @@ const UserManagement: React.FC = () => {
             </tbody>
           </table>
         </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing page <span className="font-medium">{currentPage}</span> of{' '}
-                  <span className="font-medium">{totalPages}</span> ({stats.total} total users)
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  <button
-                    onClick={() => setCurrentPage(1)}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    First
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Previous
-                  </button>
-                  <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                    {currentPage}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Last
-                  </button>
-                </nav>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
