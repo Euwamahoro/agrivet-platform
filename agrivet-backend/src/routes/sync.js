@@ -31,7 +31,7 @@ router.post('/service-requests', async (req, res) => {
             id: requestData.id,
             service_type: requestData.service_type,
             status: requestData.status,
-            farmer_phone: requestData.farmer_phone // LOG THIS
+            farmer_phone: requestData.farmerPhone // LOG THIS
           });
 
           // Check if request already exists
@@ -45,7 +45,7 @@ router.post('/service-requests', async (req, res) => {
           let farmer = await Farmer.findOne({ 
             $or: [
               { ussdId: requestData.farmer_id },
-              { phone: requestData.farmer_phone }
+              { phone: requestData.farmerPhone }
             ]
           });
 
@@ -54,9 +54,9 @@ router.post('/service-requests', async (req, res) => {
             
             // Try to create a placeholder farmer if none exists
             if (requestData.farmer_phone) {
-              console.log(`🔄 Creating placeholder farmer for phone: ${requestData.farmer_phone}`);
+              console.log(`🔄 Creating placeholder farmer for phone: ${requestData.farmerPhone}`);
               farmer = new Farmer({
-                phone: requestData.farmer_phone,
+                phone: requestData.farmerPhone,
                 name: 'Farmer from USSD',
                 province: requestData.province || 'Unknown',
                 district: requestData.district || 'Unknown',
@@ -95,7 +95,7 @@ router.post('/service-requests', async (req, res) => {
             farmer: farmer._id,
             graduate: graduate ? graduate._id : undefined,
             // ✅ ADD THESE FIELDS:
-            farmerPhone: requestData.farmer_phone || farmer.phone,
+            farmerPhone: requestData.farmerPhone || farmer.phone,
             farmerName: farmer.name,
             serviceType: requestData.service_type,
             description: requestData.description,
