@@ -21,8 +21,6 @@ exports.getAvailableRequests = async (req, res) => {
     }
 
     const requests = await ServiceRequest.find(filter)
-      .populate('farmer', 'province district sector cell')
-      .populate('farmer.user', 'name phoneNumber')
       .sort({ createdAt: -1 })
       .limit(50);
 

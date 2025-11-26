@@ -31,13 +31,14 @@ const AvailableRequests: React.FC = () => {
     return `#${requestId.substring(0, 8)}`;
   };
 
-  const getFarmerName = (farmer: any) => {
-    return farmer?.name || 'Farmer';
-  };
+  // In AvailableRequests.tsx
+const getFarmerName = (request: any) => {
+  return request.farmerName || 'Farmer';  
+};
 
-  const getFarmerPhone = (farmer: any) => {
-    return farmer?.phoneNumber || 'N/A';
-  };
+const getFarmerPhone = (request: any) => {
+  return request.farmerPhone || 'N/A';
+};
 
   const getLocation = (location: any) => {
     if (!location) return 'Location unknown';
