@@ -7,6 +7,8 @@ interface CombinedUser extends User {
   district?: string;
   totalRequests?: number;
   completedRequests?: number;
+  pendingRequests?: number;
+  serviceRequests?: any[];
 }
 
 const UserManagement: React.FC = () => {
@@ -32,7 +34,7 @@ const UserManagement: React.FC = () => {
       
       // Fetch ALL data from all endpoints
       const [usersResponse, farmersResponse, graduatesResponse] = await Promise.all([
-        getUsers('', 1, 1000), // Get ALL users without role filter
+        getUsers('', 1, 1000),
         getFarmers(),
         getGraduates()
       ]);
@@ -43,6 +45,9 @@ const UserManagement: React.FC = () => {
         totalGraduates: graduatesResponse?.length || 0
       });
 
+      console.log('👨‍🌾 Farmers raw data:', farmersResponse);
+      console.log('🎓 Graduates raw data:', graduatesResponse);
+
       let combinedUsers: CombinedUser[] = [];
 
       // 1. Start with base users
@@ -51,71 +56,100 @@ const UserManagement: React.FC = () => {
         console.log('✅ Loaded base users:', usersResponse.users.length);
       }
 
-      // 2. Add farmers - ensure we include ALL farmers
+      // 2. Process FARMERS - with comprehensive data extraction
       if (farmersResponse && Array.isArray(farmersResponse)) {
         farmersResponse.forEach((farmer: any) => {
+          console.log('Processing farmer:', farmer);
+          
+          // Extract service requests data
+          const serviceRequests = farmer.requests || farmer.serviceRequests || [];
+          const totalRequests = serviceRequests.length;
+          const completedRequests = serviceRequests.filter((req: any) => 
+            req.status === 'completed' || req.status === 'closed'
+          ).length;
+          const pendingRequests = serviceRequests.filter((req: any) => 
+            req.status === 'pending' || req.status === 'assigned' || req.status === 'in_progress'
+          ).length;
+
+          // Extract farmer data - handle different possible data structures
+          const farmerData: CombinedUser = {
+            _id: farmer._id || farmer.user?._id,
+            name: farmer.name || farmer.user?.name || farmer.farmerName || 'Unknown Farmer',
+            phoneNumber: farmer.phoneNumber || farmer.user?.phoneNumber || farmer.farmerPhone || 'N/A',
+            email: farmer.email || farmer.user?.email,
+            role: 'farmer',
+            isActive: farmer.isActive ?? farmer.user?.isActive ?? true,
+            createdAt: farmer.createdAt || farmer.user?.createdAt || new Date().toISOString(),
+            province: farmer.province || farmer.location?.province,
+            district: farmer.district || farmer.location?.district,
+            totalRequests: farmer.totalRequests || totalRequests,
+            completedRequests: farmer.completedRequests || completedRequests,
+            pendingRequests: pendingRequests,
+            serviceRequests: serviceRequests
+          };
+
           // Check if this farmer already exists in combinedUsers
-          const existingUserIndex = combinedUsers.findIndex(u => u._id === farmer.user?._id);
+          const existingUserIndex = combinedUsers.findIndex(u => 
+            u._id === farmerData._id || 
+            u.phoneNumber === farmerData.phoneNumber ||
+            u.name === farmerData.name
+          );
           
           if (existingUserIndex !== -1) {
             // Update existing user with farmer details
             combinedUsers[existingUserIndex] = {
               ...combinedUsers[existingUserIndex],
-              province: farmer.province,
-              district: farmer.district,
-              totalRequests: farmer.totalRequests,
-              completedRequests: farmer.completedRequests
+              ...farmerData,
+              role: 'farmer'
             };
+            console.log('✅ Updated existing farmer:', farmerData.name);
           } else {
             // Create new user entry from farmer data
-            const newFarmerUser: CombinedUser = {
-              _id: farmer.user?._id || farmer._id,
-              name: farmer.user?.name || farmer.name || 'Unknown Farmer',
-              phoneNumber: farmer.user?.phoneNumber || farmer.phoneNumber || 'N/A',
-              email: farmer.user?.email || farmer.email,
-              role: 'farmer',
-              isActive: farmer.user?.isActive ?? farmer.isActive ?? true,
-              createdAt: farmer.user?.createdAt || farmer.createdAt || new Date().toISOString(),
-              province: farmer.province,
-              district: farmer.district,
-              totalRequests: farmer.totalRequests,
-              completedRequests: farmer.completedRequests
-            };
-            combinedUsers.push(newFarmerUser);
+            combinedUsers.push(farmerData);
+            console.log('✅ Added new farmer:', farmerData.name);
           }
         });
         console.log('✅ Processed farmers:', farmersResponse.length);
       }
 
-      // 3. Add graduates - ensure we include ALL graduates
+      // 3. Process GRADUATES - with comprehensive data extraction
       if (graduatesResponse && Array.isArray(graduatesResponse)) {
         graduatesResponse.forEach((graduate: any) => {
+          console.log('Processing graduate:', graduate);
+          
+          // Extract graduate data
+          const graduateData: CombinedUser = {
+            _id: graduate._id || graduate.user?._id,
+            name: graduate.name || graduate.user?.name || 'Unknown Graduate',
+            phoneNumber: graduate.phoneNumber || graduate.user?.phoneNumber || 'N/A',
+            email: graduate.email || graduate.user?.email,
+            role: 'graduate',
+            isActive: graduate.isActive ?? graduate.user?.isActive ?? true,
+            createdAt: graduate.createdAt || graduate.user?.createdAt || new Date().toISOString(),
+            expertise: graduate.expertise,
+            province: graduate.province || graduate.location?.province,
+            district: graduate.district || graduate.location?.district
+          };
+
           // Check if this graduate already exists in combinedUsers
-          const existingUserIndex = combinedUsers.findIndex(u => u._id === graduate.user?._id);
+          const existingUserIndex = combinedUsers.findIndex(u => 
+            u._id === graduateData._id || 
+            u.phoneNumber === graduateData.phoneNumber ||
+            u.name === graduateData.name
+          );
           
           if (existingUserIndex !== -1) {
             // Update existing user with graduate details
             combinedUsers[existingUserIndex] = {
               ...combinedUsers[existingUserIndex],
-              expertise: graduate.expertise,
-              province: graduate.province,
-              district: graduate.district
+              ...graduateData,
+              role: 'graduate'
             };
+            console.log('✅ Updated existing graduate:', graduateData.name);
           } else {
             // Create new user entry from graduate data
-            const newGraduateUser: CombinedUser = {
-              _id: graduate.user?._id || graduate._id,
-              name: graduate.user?.name || graduate.name || 'Unknown Graduate',
-              phoneNumber: graduate.user?.phoneNumber || graduate.phoneNumber || 'N/A',
-              email: graduate.user?.email || graduate.email,
-              role: 'graduate',
-              isActive: graduate.user?.isActive ?? graduate.isActive ?? true,
-              createdAt: graduate.user?.createdAt || graduate.createdAt || new Date().toISOString(),
-              expertise: graduate.expertise,
-              province: graduate.province,
-              district: graduate.district
-            };
-            combinedUsers.push(newGraduateUser);
+            combinedUsers.push(graduateData);
+            console.log('✅ Added new graduate:', graduateData.name);
           }
         });
         console.log('✅ Processed graduates:', graduatesResponse.length);
@@ -126,12 +160,23 @@ const UserManagement: React.FC = () => {
         index === self.findIndex(u => u._id === user._id)
       );
 
-      console.log('🎯 Final combined users:', uniqueUsers.length);
+      console.log('🎯 Final combined users:', uniqueUsers);
       console.log('📈 Role distribution:', {
         admins: uniqueUsers.filter(u => u.role === 'admin').length,
         graduates: uniqueUsers.filter(u => u.role === 'graduate').length,
         farmers: uniqueUsers.filter(u => u.role === 'farmer').length
       });
+
+      // Log farmer details for debugging
+      const farmers = uniqueUsers.filter(u => u.role === 'farmer');
+      console.log('👨‍🌾 Farmer details:', farmers.map(f => ({
+        name: f.name,
+        phone: f.phoneNumber,
+        totalRequests: f.totalRequests,
+        completedRequests: f.completedRequests,
+        pendingRequests: f.pendingRequests,
+        serviceRequests: f.serviceRequests?.length
+      })));
 
       // Apply role filter if specified
       let filteredUsers = uniqueUsers;
@@ -160,7 +205,6 @@ const UserManagement: React.FC = () => {
     try {
       setActionLoading(userId);
       await updateUserStatus(userId, !currentStatus);
-      // Refresh the list after update
       await fetchAllUsers();
       alert(`User ${!currentStatus ? 'activated' : 'deactivated'} successfully!`);
     } catch (error) {
@@ -203,7 +247,6 @@ const UserManagement: React.FC = () => {
       setLoading(true);
       const isActive = action === 'activate';
       
-      // Update all selected users
       await Promise.all(
         selectedUsers.map(userId => updateUserStatus(userId, isActive))
       );
@@ -229,7 +272,7 @@ const UserManagement: React.FC = () => {
     (user.district && user.district.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Calculate statistics from ALL users (not filtered by search)
+  // Calculate statistics from ALL users
   const stats = {
     total: users.length,
     active: users.filter(u => u.isActive).length,
@@ -255,6 +298,16 @@ const UserManagement: React.FC = () => {
       case 'farmer': return '🌾';
       default: return '👤';
     }
+  };
+
+  const getRequestStats = (user: CombinedUser) => {
+    if (user.role !== 'farmer') return null;
+    
+    const total = user.totalRequests || 0;
+    const completed = user.completedRequests || 0;
+    const pending = user.pendingRequests || (total - completed);
+    
+    return { total, completed, pending };
   };
 
   if (loading && users.length === 0) {
@@ -332,7 +385,25 @@ const UserManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Rest of the component remains the same as your original */}
+      {/* Debug Information - Remove in production */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <h3 className="text-lg font-medium text-yellow-800 mb-2">Debug Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+          <div>
+            <strong>Total Farmers:</strong> {stats.farmers}
+          </div>
+          <div>
+            <strong>Farmers with Phone:</strong> {users.filter(u => u.role === 'farmer' && u.phoneNumber !== 'N/A').length}
+          </div>
+          <div>
+            <strong>Farmers with Requests:</strong> {users.filter(u => u.role === 'farmer' && (u.totalRequests || 0) > 0).length}
+          </div>
+          <div>
+            <strong>Total Service Requests:</strong> {users.reduce((total, user) => total + (user.totalRequests || 0), 0)}
+          </div>
+        </div>
+      </div>
+
       {/* Filters and Search */}
       <div className="bg-white shadow rounded-lg p-4">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
@@ -464,117 +535,133 @@ const UserManagement: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((user) => (
-                  <tr 
-                    key={user._id} 
-                    className={`hover:bg-gray-50 transition-colors ${
-                      selectedUsers.includes(user._id) ? 'bg-blue-50' : ''
-                    } ${!user.isActive ? 'opacity-70' : ''}`}
-                  >
-                    <td className="px-4 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedUsers.includes(user._id)}
-                        onChange={() => handleSelectUser(user._id)}
-                        className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                      />
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
-                          <span className="text-green-600 font-semibold text-lg">
-                            {user.name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 flex items-center space-x-2">
-                            <span>{user.name}</span>
-                            {!user.isActive && (
-                              <span className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded">INACTIVE</span>
+                filteredUsers.map((user) => {
+                  const requestStats = getRequestStats(user);
+                  
+                  return (
+                    <tr 
+                      key={user._id} 
+                      className={`hover:bg-gray-50 transition-colors ${
+                        selectedUsers.includes(user._id) ? 'bg-blue-50' : ''
+                      } ${!user.isActive ? 'opacity-70' : ''}`}
+                    >
+                      <td className="px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.includes(user._id)}
+                          onChange={() => handleSelectUser(user._id)}
+                          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                        />
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <span className="text-green-600 font-semibold text-lg">
+                              {user.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900 flex items-center space-x-2">
+                              <span>{user.name}</span>
+                              {!user.isActive && (
+                                <span className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded">INACTIVE</span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500 flex items-center space-x-1">
+                              <span>📱</span>
+                              <span>{user.phoneNumber}</span>
+                            </div>
+                            {user.email && (
+                              <div className="text-sm text-gray-500 flex items-center space-x-1">
+                                <span>✉️</span>
+                                <span>{user.email}</span>
+                              </div>
                             )}
                           </div>
-                          <div className="text-sm text-gray-500 flex items-center space-x-1">
-                            <span>📱</span>
-                            <span>{user.phoneNumber}</span>
-                          </div>
-                          {user.email && (
-                            <div className="text-sm text-gray-500 flex items-center space-x-1">
-                              <span>✉️</span>
-                              <span>{user.email}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="space-y-2">
+                          <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full border ${getRoleBadgeColor(user.role)}`}>
+                            {getRoleIcon(user.role)} {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                          </span>
+                          
+                          {/* Role-specific details */}
+                          {user.role === 'graduate' && user.expertise && (
+                            <div className="text-xs text-gray-600">
+                              <strong>Expertise:</strong> {user.expertise}
+                            </div>
+                          )}
+                          
+                          {(user.province || user.district) && (
+                            <div className="text-xs text-gray-600">
+                              <strong>Location:</strong> {[user.province, user.district].filter(Boolean).join(', ')}
+                            </div>
+                          )}
+                          
+                          {user.role === 'farmer' && requestStats && (
+                            <div className="space-y-1">
+                              <div className="text-xs text-gray-600">
+                                <strong>Requests:</strong> {requestStats.completed}/{requestStats.total} completed
+                              </div>
+                              {requestStats.pending > 0 && (
+                                <div className="text-xs text-yellow-600">
+                                  <strong>Pending:</strong> {requestStats.pending}
+                                </div>
+                              )}
+                              {user.serviceRequests && user.serviceRequests.length > 0 && (
+                                <div className="text-xs text-blue-600">
+                                  <strong>Services:</strong> {user.serviceRequests.length} total
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="space-y-2">
-                        <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full border ${getRoleBadgeColor(user.role)}`}>
-                          {getRoleIcon(user.role)} {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full ${
+                          user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          <span className={`mr-1 h-2 w-2 rounded-full ${
+                            user.isActive ? 'bg-green-600' : 'bg-red-600'
+                          }`}></span>
+                          {user.isActive ? 'Active' : 'Inactive'}
                         </span>
-                        
-                        {/* Role-specific details */}
-                        {user.role === 'graduate' && user.expertise && (
-                          <div className="text-xs text-gray-600">
-                            <strong>Expertise:</strong> {user.expertise}
-                          </div>
-                        )}
-                        
-                        {(user.province || user.district) && (
-                          <div className="text-xs text-gray-600">
-                            <strong>Location:</strong> {[user.province, user.district].filter(Boolean).join(', ')}
-                          </div>
-                        )}
-                        
-                        {user.role === 'farmer' && (user.totalRequests !== undefined) && (
-                          <div className="text-xs text-gray-600">
-                            <strong>Requests:</strong> {user.completedRequests || 0}/{user.totalRequests} completed
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full ${
-                        user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        <span className={`mr-1 h-2 w-2 rounded-full ${
-                          user.isActive ? 'bg-green-600' : 'bg-red-600'
-                        }`}></span>
-                        {user.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div>{new Date(user.createdAt).toLocaleDateString()}</div>
-                      <div className="text-xs text-gray-400">
-                        {new Date(user.createdAt).toLocaleTimeString()}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleStatusToggle(user._id, user.isActive)}
-                        disabled={actionLoading === user._id}
-                        className={`inline-flex items-center px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                          user.isActive 
-                            ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                            : 'bg-green-100 text-green-700 hover:bg-green-200'
-                        } ${actionLoading === user._id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        {actionLoading === user._id ? (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            {user.isActive ? '🚫 Deactivate' : '✅ Activate'}
-                          </>
-                        )}
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div>{new Date(user.createdAt).toLocaleDateString()}</div>
+                        <div className="text-xs text-gray-400">
+                          {new Date(user.createdAt).toLocaleTimeString()}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleStatusToggle(user._id, user.isActive)}
+                          disabled={actionLoading === user._id}
+                          className={`inline-flex items-center px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                            user.isActive 
+                              ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                              : 'bg-green-100 text-green-700 hover:bg-green-200'
+                          } ${actionLoading === user._id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          {actionLoading === user._id ? (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              {user.isActive ? '🚫 Deactivate' : '✅ Activate'}
+                            </>
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
