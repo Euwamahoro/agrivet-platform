@@ -1,6 +1,107 @@
-// src/routes/sync.js - FIXED SERVICE REQUEST SYNC
-// Only showing the service-requests route - keep everything else as is
+// src/routes/sync.js - COMPLETE UPDATED VERSION
+const express = require('express');
+const Farmer = require('../models/Farmer');
+const ServiceRequest = require('../models/serviceRequest');
+const Graduate = require('../models/Graduate');
+const router = express.Router();
 
+// POST /api/sync/farmers - Receive farmers from USSD
+router.post('/farmers', async (req, res) => {
+  try {
+    console.log(`\n🔄 ===== SYNC ROUTE: FARMERS SYNC STARTED =====`);
+    const { farmers } = req.body;
+    
+    console.log(`📥 Received ${farmers?.length || 0} farmers from USSD`);
+    console.log('📋 Request body structure:', {
+      hasFarmers: !!farmers,
+      farmersType: Array.isArray(farmers) ? 'array' : typeof farmers,
+      farmersLength: farmers?.length || 0
+    });
+
+    if (!farmers || farmers.length === 0) {
+      console.log('❌ No farmers data received in request body');
+      return res.json({ 
+        success: true, 
+        message: 'No farmers to sync',
+        synced: 0
+      });
+    }
+
+    console.log('📋 First farmer in request:', farmers[0]);
+
+    let syncedCount = 0;
+    const syncedFarmers = [];
+
+    for (const farmerData of farmers) {
+      try {
+        console.log(`\n🔄 Processing farmer: ${farmerData.phone_number} (${farmerData.name})`);
+
+        // Check if farmer already exists by phone number or USSD ID
+        let farmer = await Farmer.findOne({ 
+          $or: [
+            { phone: farmerData.phone_number },
+            { ussdId: farmerData.id }
+          ]
+        });
+
+        if (farmer) {
+          console.log(`✅ Farmer already exists: ${farmer.phone}`);
+          // Update existing farmer if needed
+          if (!farmer.ussdId && farmerData.id) {
+            farmer.ussdId = farmerData.id;
+            await farmer.save();
+            console.log(`📝 Updated farmer with USSD ID: ${farmerData.id}`);
+          }
+          syncedFarmers.push(farmer);
+          continue;
+        }
+
+        // Create new farmer
+        farmer = new Farmer({
+          phone: farmerData.phone_number,
+          name: farmerData.name || 'Farmer from USSD',
+          province: farmerData.province || 'Unknown',
+          district: farmerData.district || 'Unknown',
+          sector: farmerData.sector || 'Unknown',
+          cell: farmerData.cell || 'Unknown',
+          locationText: `${farmerData.province || 'Unknown'}, ${farmerData.district || 'Unknown'}`,
+          ussdId: farmerData.id,
+          totalRequests: 0,
+          completedRequests: 0
+        });
+
+        await farmer.save();
+        syncedCount++;
+        syncedFarmers.push(farmer);
+        console.log(`🎉 Created new farmer: ${farmer.phone} (${farmer._id})`);
+
+      } catch (error) {
+        console.error(`❌ Failed to sync farmer ${farmerData.phone_number}:`, error.message);
+      }
+    }
+
+    console.log(`\n📊 Farmers sync summary:`);
+    console.log(`   Total received: ${farmers.length}`);
+    console.log(`   Newly synced: ${syncedCount}`);
+    console.log(`   Already existed: ${farmers.length - syncedCount}`);
+
+    res.json({
+      success: true,
+      message: `Synced ${syncedCount} farmers from USSD`,
+      synced: syncedCount,
+      data: syncedFarmers
+    });
+
+  } catch (error) {
+    console.error('❌ Error syncing farmers:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to sync farmers from USSD' 
+    });
+  }
+});
+
+// POST /api/sync/service-requests - Receive service requests from USSD
 router.post('/service-requests', async (req, res) => {
   try {
     const { serviceRequests } = req.body;
@@ -31,7 +132,7 @@ router.post('/service-requests', async (req, res) => {
             id: requestData.id,
             service_type: requestData.service_type,
             status: requestData.status,
-            farmer_phone: requestData.farmerPhone // LOG THIS
+            farmer_phone: requestData.farmer_phone // FIXED: was farmerPhone
           });
 
           // Check if request already exists
@@ -41,38 +142,29 @@ router.post('/service-requests', async (req, res) => {
             return existingRequest;
           }
 
-          // Find the corresponding farmer in MongoDB by ussdId or phone
+          // Find the corresponding farmer in MongoDB by phone
           let farmer = await Farmer.findOne({ 
-            $or: [
-              { ussdId: requestData.farmer_id },
-              { phone: requestData.farmerPhone }
-            ]
+            phone: requestData.farmer_phone 
           });
 
           if (!farmer) {
-            console.warn(`❌ No matching farmer found for USSD ID: ${requestData.farmer_id} or phone: ${requestData.farmer_phone}`);
+            console.warn(`❌ No matching farmer found for phone: ${requestData.farmer_phone}`);
             
-            // Try to create a placeholder farmer if none exists
-            if (requestData.farmer_phone) {
-              console.log(`🔄 Creating placeholder farmer for phone: ${requestData.farmerPhone}`);
-              farmer = new Farmer({
-                phone: requestData.farmerPhone,
-                name: 'Farmer from USSD',
-                province: requestData.province || 'Unknown',
-                district: requestData.district || 'Unknown',
-                sector: requestData.sector || 'Unknown',
-                cell: requestData.cell || 'Unknown',
-                locationText: `${requestData.province}, ${requestData.district}, ${requestData.sector}, ${requestData.cell}`,
-                ussdId: requestData.farmer_id,
-                totalRequests: 1,
-                completedRequests: 0
-              });
-              await farmer.save();
-              console.log(`✅ Created placeholder farmer: ${farmer._id}`);
-            } else {
-              console.log('❌ Cannot create farmer - no phone number provided');
-              return null;
-            }
+            // Create a placeholder farmer
+            console.log(`🔄 Creating placeholder farmer for phone: ${requestData.farmer_phone}`);
+            farmer = new Farmer({
+              phone: requestData.farmer_phone,
+              name: 'Farmer from USSD',
+              province: requestData.province || 'Unknown',
+              district: requestData.district || 'Unknown',
+              sector: requestData.sector || 'Unknown',
+              cell: requestData.cell || 'Unknown',
+              locationText: `${requestData.province || 'Unknown'}, ${requestData.district || 'Unknown'}`,
+              totalRequests: 1,
+              completedRequests: 0
+            });
+            await farmer.save();
+            console.log(`✅ Created placeholder farmer: ${farmer._id}`);
           }
 
           console.log(`✅ Found farmer: ${farmer.name} (${farmer.phone})`);
@@ -90,12 +182,11 @@ router.post('/service-requests', async (req, res) => {
             }
           }
 
-          // Create service request in MongoDB with farmer phone and name
+          // Create service request in MongoDB
           const request = new ServiceRequest({
             farmer: farmer._id,
             graduate: graduate ? graduate._id : undefined,
-            // ✅ ADD THESE FIELDS:
-            farmerPhone: requestData.farmerPhone || farmer.phone,
+            farmerPhone: requestData.farmer_phone, // FIXED: was farmerPhone
             farmerName: farmer.name,
             serviceType: requestData.service_type,
             description: requestData.description,
@@ -109,7 +200,8 @@ router.post('/service-requests', async (req, res) => {
             ussdId: requestData.id,
             assignedAt: requestData.assigned_at,
             createdAt: requestData.created_at,
-            updatedAt: requestData.updated_at
+            updatedAt: requestData.updated_at,
+            source: 'ussd' // Mark as from USSD
           });
 
           await request.save();
@@ -144,3 +236,31 @@ router.post('/service-requests', async (req, res) => {
     });
   }
 });
+
+// GET /api/sync/status - Get sync status
+router.get('/status', async (req, res) => {
+  try {
+    const totalFarmers = await Farmer.countDocuments();
+    const totalServiceRequests = await ServiceRequest.countDocuments();
+    const ussdServiceRequests = await ServiceRequest.countDocuments({ source: 'ussd' });
+    
+    res.json({
+      success: true,
+      data: {
+        totalFarmers,
+        totalServiceRequests,
+        ussdServiceRequests,
+        webServiceRequests: totalServiceRequests - ussdServiceRequests,
+        lastSync: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting sync status:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to get sync status' 
+    });
+  }
+});
+
+module.exports = router;
