@@ -1,8 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { getUsers, updateUserStatus, User } from '../../services/adminServices';
+import { getUsers, updateUserStatus, User, getFarmers, getGraduates } from '../../services/adminServices';
+
+interface CombinedUser extends User {
+  // Additional fields from farmers and graduates
+  expertise?: string;
+  province?: string;
+  district?: string;
+  totalRequests?: number;
+  completedRequests?: number;
+}
 
 const UserManagement: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<CombinedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -11,18 +20,71 @@ const UserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
 
   useEffect(() => {
-    fetchUsers();
-  }, [currentPage, filterRole]);
+    fetchAllUsers();
+  }, [currentPage, filterRole, showInactive]);
 
-  const fetchUsers = async () => {
+  const fetchAllUsers = async () => {
     try {
       setLoading(true);
-      const data = await getUsers(filterRole, currentPage);
-      setUsers(data.users);
-      setTotalPages(data.totalPages);
-      setTotal(data.total);
+      
+      // Fetch base users
+      const usersData = await getUsers(filterRole, currentPage);
+      
+      // Fetch additional data for farmers and graduates
+      let enrichedUsers = [...usersData.users];
+      
+      if (!filterRole || filterRole === 'farmer') {
+        try {
+          const farmersData = await getFarmers();
+          enrichedUsers = enrichedUsers.map(user => {
+            if (user.role === 'farmer') {
+              const farmerDetails = farmersData.find((f: any) => f.user?._id === user._id);
+              return {
+                ...user,
+                province: farmerDetails?.province,
+                district: farmerDetails?.district,
+                totalRequests: farmerDetails?.totalRequests,
+                completedRequests: farmerDetails?.completedRequests
+              };
+            }
+            return user;
+          });
+        } catch (error) {
+          console.error('Error fetching farmer details:', error);
+        }
+      }
+      
+      if (!filterRole || filterRole === 'graduate') {
+        try {
+          const graduatesData = await getGraduates();
+          enrichedUsers = enrichedUsers.map(user => {
+            if (user.role === 'graduate') {
+              const graduateDetails = graduatesData.find((g: any) => g.user?._id === user._id);
+              return {
+                ...user,
+                expertise: graduateDetails?.expertise,
+                province: graduateDetails?.province,
+                district: graduateDetails?.district
+              };
+            }
+            return user;
+          });
+        } catch (error) {
+          console.error('Error fetching graduate details:', error);
+        }
+      }
+
+      // Filter by active/inactive status
+      if (!showInactive) {
+        enrichedUsers = enrichedUsers.filter(user => user.isActive);
+      }
+
+      setUsers(enrichedUsers);
+      setTotalPages(usersData.totalPages);
+      setTotal(usersData.total);
     } catch (error) {
       console.error('Error fetching users:', error);
     } finally {
@@ -34,7 +96,7 @@ const UserManagement: React.FC = () => {
     try {
       setActionLoading(userId);
       await updateUserStatus(userId, !currentStatus);
-      fetchUsers(); // Refresh the list
+      fetchAllUsers(); // Refresh the list
     } catch (error) {
       console.error('Error updating user status:', error);
       alert('Failed to update user status. Please try again.');
@@ -81,7 +143,7 @@ const UserManagement: React.FC = () => {
       );
       
       setSelectedUsers([]);
-      fetchUsers();
+      fetchAllUsers();
       alert(`Successfully ${action}d ${selectedUsers.length} user(s)`);
     } catch (error) {
       console.error('Error performing bulk action:', error);
@@ -95,7 +157,9 @@ const UserManagement: React.FC = () => {
   const filteredUsers = users.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.phoneNumber.includes(searchTerm) ||
-    (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
+    (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (user.expertise && user.expertise.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (user.province && user.province.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Calculate statistics
@@ -106,6 +170,24 @@ const UserManagement: React.FC = () => {
     admins: users.filter(u => u.role === 'admin').length,
     graduates: users.filter(u => u.role === 'graduate').length,
     farmers: users.filter(u => u.role === 'farmer').length,
+  };
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'admin': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'graduate': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'farmer': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'admin': return '👑';
+      case 'graduate': return '🎓';
+      case 'farmer': return '🌾';
+      default: return '👤';
+    }
   };
 
   if (loading && users.length === 0) {
@@ -127,6 +209,15 @@ const UserManagement: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
           <p className="text-sm text-gray-500 mt-1">Manage all platform users and their access</p>
         </div>
+        <button
+          onClick={fetchAllUsers}
+          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center space-x-2"
+        >
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Refresh</span>
+        </button>
       </div>
 
       {/* Statistics Cards */}
@@ -159,12 +250,12 @@ const UserManagement: React.FC = () => {
 
       {/* Filters and Search */}
       <div className="bg-white shadow rounded-lg p-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0 md:space-x-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
           <div className="flex-1">
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search by name, phone, or email..."
+                placeholder="Search by name, phone, email, expertise, or location..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full border border-gray-300 rounded-md pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -180,7 +271,7 @@ const UserManagement: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex space-x-3">
+          <div className="flex flex-wrap gap-3">
             <select
               value={filterRole}
               onChange={(e) => {
@@ -195,24 +286,25 @@ const UserManagement: React.FC = () => {
               <option value="admin">Admins</option>
             </select>
 
-            <button
-              onClick={fetchUsers}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
+            <label className="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-md">
+              <input
+                type="checkbox"
+                checked={showInactive}
+                onChange={(e) => setShowInactive(e.target.checked)}
+                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+              />
+              <span className="text-sm text-gray-700">Show Inactive Users</span>
+            </label>
           </div>
         </div>
 
         {/* Bulk Actions */}
         {selectedUsers.length > 0 && (
-          <div className="mt-4 flex items-center justify-between bg-blue-50 border border-blue-200 rounded-md p-3">
-            <span className="text-sm font-medium text-blue-900">
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between bg-blue-50 border border-blue-200 rounded-md p-3">
+            <span className="text-sm font-medium text-blue-900 mb-2 sm:mb-0">
               {selectedUsers.length} user(s) selected
             </span>
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => handleBulkAction('activate')}
                 className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
@@ -242,7 +334,7 @@ const UserManagement: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left">
+                <th className="px-4 py-3 text-left">
                   <input
                     type="checkbox"
                     checked={selectedUsers.length === users.length && users.length > 0}
@@ -250,19 +342,19 @@ const UserManagement: React.FC = () => {
                     className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                   />
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   User Information
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Role & Details
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Registered
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -270,8 +362,23 @@ const UserManagement: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                    {searchTerm ? 'No users found matching your search' : 'No users found'}
+                  <td colSpan={6} className="px-6 py-12 text-center">
+                    <div className="flex flex-col items-center space-y-3">
+                      <svg className="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                      </svg>
+                      <div className="text-gray-500 text-lg">
+                        {searchTerm ? 'No users found matching your search' : 'No users found'}
+                      </div>
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm('')}
+                          className="text-green-600 hover:text-green-700 text-sm"
+                        >
+                          Clear search
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -280,9 +387,9 @@ const UserManagement: React.FC = () => {
                     key={user._id} 
                     className={`hover:bg-gray-50 transition-colors ${
                       selectedUsers.includes(user._id) ? 'bg-blue-50' : ''
-                    }`}
+                    } ${!user.isActive ? 'opacity-70' : ''}`}
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <input
                         type="checkbox"
                         checked={selectedUsers.includes(user._id)}
@@ -290,41 +397,60 @@ const UserManagement: React.FC = () => {
                         className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                       />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <div className="flex-shrink-0 h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
                           <span className="text-green-600 font-semibold text-lg">
                             {user.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {user.name}
+                          <div className="text-sm font-medium text-gray-900 flex items-center space-x-2">
+                            <span>{user.name}</span>
+                            {!user.isActive && (
+                              <span className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded">INACTIVE</span>
+                            )}
                           </div>
-                          <div className="text-sm text-gray-500">
-                            📱 {user.phoneNumber}
+                          <div className="text-sm text-gray-500 flex items-center space-x-1">
+                            <span>📱</span>
+                            <span>{user.phoneNumber}</span>
                           </div>
                           {user.email && (
-                            <div className="text-sm text-gray-500">
-                              ✉️ {user.email}
+                            <div className="text-sm text-gray-500 flex items-center space-x-1">
+                              <span>✉️</span>
+                              <span>{user.email}</span>
                             </div>
                           )}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full ${
-                        user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                        user.role === 'graduate' ? 'bg-blue-100 text-blue-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {user.role === 'admin' && '👤 '}
-                        {user.role === 'graduate' && '🎓 '}
-                        {user.role === 'farmer' && '🌾 '}
-                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                      </span>
+                    <td className="px-4 py-4">
+                      <div className="space-y-2">
+                        <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full border ${getRoleBadgeColor(user.role)}`}>
+                          {getRoleIcon(user.role)} {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                        </span>
+                        
+                        {/* Role-specific details */}
+                        {user.role === 'graduate' && user.expertise && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Expertise:</strong> {user.expertise}
+                          </div>
+                        )}
+                        
+                        {(user.province || user.district) && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Location:</strong> {[user.province, user.district].filter(Boolean).join(', ')}
+                          </div>
+                        )}
+                        
+                        {user.role === 'farmer' && (user.totalRequests !== undefined) && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Requests:</strong> {user.completedRequests || 0}/{user.totalRequests} completed
+                          </div>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full ${
                         user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
@@ -334,13 +460,13 @@ const UserManagement: React.FC = () => {
                         {user.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div>{new Date(user.createdAt).toLocaleDateString()}</div>
                       <div className="text-xs text-gray-400">
                         {new Date(user.createdAt).toLocaleTimeString()}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => handleStatusToggle(user._id, user.isActive)}
                         disabled={actionLoading === user._id}
@@ -395,7 +521,7 @@ const UserManagement: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-700">
                   Showing page <span className="font-medium">{currentPage}</span> of{' '}
-                  <span className="font-medium">{totalPages}</span> ({total} total users)
+                  <span className="font-medium">{totalPages}</span> ({stats.total} total users)
                 </p>
               </div>
               <div>
@@ -403,28 +529,31 @@ const UserManagement: React.FC = () => {
                   <button
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    className="relative inline-flex items-center px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                   >
                     First
                   </button>
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    className="relative inline-flex items-center px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                   >
                     Previous
                   </button>
+                  <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                    {currentPage}
+                  </span>
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    className="relative inline-flex items-center px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                   >
                     Next
                   </button>
                   <button
                     onClick={() => setCurrentPage(totalPages)}
                     disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    className="relative inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                   >
                     Last
                   </button>
@@ -434,16 +563,6 @@ const UserManagement: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Loading Overlay */}
-      {loading && users.length > 0 && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 flex flex-col items-center space-y-3">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-            <div className="text-lg text-gray-700">Updating users...</div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
