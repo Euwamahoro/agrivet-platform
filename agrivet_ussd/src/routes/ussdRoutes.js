@@ -278,66 +278,60 @@ router.get('/api/farmers/sync', async (req, res) => {
 });
 
 // UPDATED: GET /api/service-requests/sync - Get service requests for web platform
+// TEMPORARY FIX - Use raw query
 router.get('/api/service-requests/sync', async (req, res) => {
   try {
     console.log('📋 DEBUG - Fetching service requests from USSD database...');
     
-    const requests = await ServiceRequest.findAll({
-      include: [
-        {
-          model: Farmer,
-          as: 'farmer',
-          attributes: ['id', 'phone_number', 'province', 'district', 'sector', 'cell'],
-          required: false
-        }
-      ],
-      attributes: ['id', 'service_type', 'description', 'status', 'farmer_id', 'farmer_phone', 'graduate_id', 'createdAt', 'updatedAt'] // ADDED farmer_phone
-    });
+    // Use raw query to bypass model issues
+    const [requests, metadata] = await sequelize.query(`
+      SELECT 
+        sr.id,
+        sr.service_type,
+        sr.description,
+        sr.status,
+        sr.farmer_id,
+        sr.farmer_phone,  -- This will definitely work
+        sr.graduate_id,
+        sr.created_at,
+        sr.updated_at,
+        f.phone_number as farmer_phone_number,
+        f.province,
+        f.district,
+        f.sector,
+        f.cell
+      FROM service_requests sr
+      LEFT JOIN farmers f ON sr.farmer_id = f.id
+      ORDER BY sr.created_at DESC
+    `);
     
     console.log(`📋 DEBUG - Found ${requests.length} service requests`);
+    console.log('📋 DEBUG - First request raw data:', requests[0]);
     
-    // Get ALL farmers as backup to ensure we have phone numbers
-    const allFarmers = await Farmer.findAll({
-      attributes: ['id', 'phone_number', 'province', 'district', 'sector', 'cell']
-    });
-    
-    const farmerMap = new Map();
-    allFarmers.forEach(farmer => {
-      farmerMap.set(farmer.id, farmer);
-    });
-    
-    // Format response with guaranteed farmer data
+    // Format response
     const formattedRequests = requests.map(req => {
-      // Try multiple sources for farmer phone
-      const farmerPhone = 
-        req.farmer_phone || // First try the stored farmer_phone
-        req.farmer?.phone_number || // Then try the associated farmer
-        (farmerMap.get(req.farmer_id)?.phone_number) || // Then try our farmer map
-        null;
-      
-      // Use location from the associated farmer
-      const location = req.farmer || farmerMap.get(req.farmer_id);
+      // Use the actual farmer_phone from database
+      const farmerPhone = req.farmer_phone || req.farmer_phone_number;
       
       const formattedRequest = {
         id: req.id,
         farmer_id: req.farmer_id,
-        farmer_phone: farmerPhone,
-        service_type: req.service_type || 'agronomy', // Fallback for service type
+        farmer_phone: farmerPhone,  // This should now have real data
+        service_type: req.service_type,
         description: req.description,
         status: req.status,
-        province: location?.province || null,
-        district: location?.district || null,
-        sector: location?.sector || null,
-        cell: location?.cell || null,
-        assigned_at: req.graduate_id ? req.updatedAt : null,
-        created_at: req.createdAt,
-        updated_at: req.updatedAt
+        province: req.province,
+        district: req.district,
+        sector: req.sector,
+        cell: req.cell,
+        assigned_at: req.graduate_id ? req.updated_at : null,
+        created_at: req.created_at,
+        updated_at: req.updated_at
       };
       
       console.log('📤 DEBUG - Formatted service request:', {
         id: formattedRequest.id,
         farmer_phone: formattedRequest.farmer_phone,
-        service_type: formattedRequest.service_type,
         has_farmer_phone: !!formattedRequest.farmer_phone
       });
       
@@ -347,8 +341,7 @@ router.get('/api/service-requests/sync', async (req, res) => {
     console.log('📊 DEBUG - Final sync summary:', {
       total_requests: formattedRequests.length,
       requests_with_farmer_phone: formattedRequests.filter(req => req.farmer_phone).length,
-      requests_without_farmer_phone: formattedRequests.filter(req => !req.farmer_phone).length,
-      requests_with_service_type: formattedRequests.filter(req => req.service_type).length
+      requests_without_farmer_phone: formattedRequests.filter(req => !req.farmer_phone).length
     });
     
     res.json({
