@@ -21,6 +21,7 @@ exports.getAvailableRequests = async (req, res) => {
     }
 
     const requests = await ServiceRequest.find(filter)
+      .populate('farmer', 'name phoneNumber location') // ✅ FIXED: Get actual farmer fields
       .sort({ createdAt: -1 })
       .limit(50);
 
