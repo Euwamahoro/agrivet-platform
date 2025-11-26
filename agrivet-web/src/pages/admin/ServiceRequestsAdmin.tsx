@@ -17,6 +17,14 @@ const ServiceRequestsAdmin: React.FC = () => {
       setLoading(true);
       const data = await getServiceRequests(filterStatus, currentPage);
       console.log('Fetched requests:', data.requests); // Debug log
+      
+      // Log the structure of the first request to understand the data
+      if (data.requests.length > 0) {
+        console.log('First request structure:', data.requests[0]);
+        console.log('Farmer data:', data.requests[0].farmer);
+        console.log('Location data:', data.requests[0].location);
+      }
+      
       setRequests(data.requests);
       setTotalPages(data.totalPages);
     } catch (error) {
@@ -35,6 +43,57 @@ const ServiceRequestsAdmin: React.FC = () => {
       case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // Helper function to safely get farmer name
+  const getFarmerName = (request: ServiceRequest) => {
+    // Try multiple possible locations for farmer name
+    return (
+      request.farmer?.user?.name ||
+      request.farmerName || // From sync service
+      'Unknown Farmer'
+    );
+  };
+
+  // Helper function to safely get farmer phone
+  const getFarmerPhone = (request: ServiceRequest) => {
+    return (
+      request.farmer?.user?.phoneNumber ||
+      request.farmerPhone || // From sync service
+      'No Phone'
+    );
+  };
+
+  // Helper function to safely get location
+  const getLocationDistrict = (request: ServiceRequest) => {
+    return (
+      request.location?.district ||
+      request.farmer?.district || // From farmer object
+      'Unknown District'
+    );
+  };
+
+  const getLocationSector = (request: ServiceRequest) => {
+    return (
+      request.location?.sector ||
+      request.farmer?.sector || // From farmer object
+      'Unknown Sector'
+    );
+  };
+
+  // Helper function to safely get graduate info
+  const getGraduateName = (request: ServiceRequest) => {
+    return (
+      request.graduate?.user?.name ||
+      'Not assigned'
+    );
+  };
+
+  const getGraduateExpertise = (request: ServiceRequest) => {
+    return (
+      request.graduate?.expertise ||
+      ''
+    );
   };
 
   if (loading) {
@@ -95,62 +154,68 @@ const ServiceRequestsAdmin: React.FC = () => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {requests.map((request) => (
-              <tr key={request._id}>
+              <tr key={request._id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
                   <div className="text-sm font-medium text-gray-900 capitalize">
-                    {request.serviceType} Service
+                    {request.serviceType || 'General'} Service
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {request.description}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {/* FIXED: Use nested farmer.user fields */}
-                    {request.farmer?.user?.name || 'Unknown Farmer'}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {/* FIXED: Use nested farmer.user phoneNumber field */}
-                    {request.farmer?.user?.phoneNumber || 'No Phone'}
+                  <div className="text-sm text-gray-500 mt-1 max-w-md">
+                    {request.description || 'No description provided'}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {/* FIXED: Safe access to location */}
-                    {request.location?.district || 'Unknown District'}
+                  <div className="text-sm font-medium text-gray-900">
+                    {getFarmerName(request)}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {request.location?.sector || 'Unknown Sector'}
+                    {getFarmerPhone(request)}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">
+                    {getLocationDistrict(request)}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {getLocationSector(request)}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {request.graduate ? (
                     <>
-                      <div className="text-sm text-gray-900">
-                        {/* FIXED: Use nested graduate.user.name */}
-                        {request.graduate?.user?.name || 'Unknown Graduate'}
+                      <div className="text-sm font-medium text-gray-900">
+                        {getGraduateName(request)}
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {request.graduate?.expertise || 'No Expertise'}
+                      <div className="text-sm text-gray-500 capitalize">
+                        {getGraduateExpertise(request)}
                       </div>
                     </>
                   ) : (
-                    <span className="text-sm text-gray-400">Not assigned</span>
+                    <span className="text-sm text-gray-400 italic">Not assigned</span>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(request.status)}`}>
+                  <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(request.status)}`}>
                     {request.status.replace('_', ' ')}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(request.createdAt).toLocaleDateString()}
+                  {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'Unknown'}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Empty State */}
+      {requests.length === 0 && !loading && (
+        <div className="text-center py-12">
+          <div className="text-gray-400 text-lg">No service requests found</div>
+          <div className="text-gray-500 text-sm mt-2">
+            {filterStatus ? `No requests with status "${filterStatus}"` : 'No requests in the system'}
+          </div>
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (

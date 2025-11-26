@@ -49,7 +49,13 @@ export interface ServiceRequest {
       phoneNumber: string;
     };
   };
+  
+  farmerPhone?: string;
+  farmerName?: string;
+  ussdId?: string;
+  source?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface AnalyticsData {
