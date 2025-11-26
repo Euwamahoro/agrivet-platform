@@ -385,25 +385,6 @@ const UserManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Debug Information - Remove in production */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <h3 className="text-lg font-medium text-yellow-800 mb-2">Debug Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-          <div>
-            <strong>Total Farmers:</strong> {stats.farmers}
-          </div>
-          <div>
-            <strong>Farmers with Phone:</strong> {users.filter(u => u.role === 'farmer' && u.phoneNumber !== 'N/A').length}
-          </div>
-          <div>
-            <strong>Farmers with Requests:</strong> {users.filter(u => u.role === 'farmer' && (u.totalRequests || 0) > 0).length}
-          </div>
-          <div>
-            <strong>Total Service Requests:</strong> {users.reduce((total, user) => total + (user.totalRequests || 0), 0)}
-          </div>
-        </div>
-      </div>
-
       {/* Filters and Search */}
       <div className="bg-white shadow rounded-lg p-4">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
