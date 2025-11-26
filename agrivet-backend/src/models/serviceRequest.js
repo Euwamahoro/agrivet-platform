@@ -1,4 +1,4 @@
-// src/models/ServiceRequest.js - Add ussdId field
+// src/models/ServiceRequest.js - UPDATED WITH FARMER INFO FIELDS
 const mongoose = require('mongoose');
 
 const serviceRequestSchema = new mongoose.Schema({
@@ -10,6 +10,15 @@ const serviceRequestSchema = new mongoose.Schema({
   graduate: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Graduate'
+  },
+  // ✅ ADD THESE FIELDS FOR DISPLAY:
+  farmerPhone: {
+    type: String,
+    required: true
+  },
+  farmerName: {
+    type: String,
+    required: true
   },
   serviceType: {
     type: String,
@@ -32,11 +41,11 @@ const serviceRequestSchema = new mongoose.Schema({
     sector: { type: String, required: true },
     cell: { type: String, required: true }
   },
-  // NEW: Track USSD reference
+  // Track USSD reference
   ussdId: {
-    type: String, // Store the USSD PostgreSQL UUID
+    type: String,
     unique: true,
-    sparse: true // Allows null for web-originated requests
+    sparse: true
   },
   assignedAt: {
     type: Date
@@ -69,6 +78,7 @@ serviceRequestSchema.index({ farmer: 1, createdAt: -1 });
 serviceRequestSchema.index({ graduate: 1, status: 1 });
 serviceRequestSchema.index({ status: 1, serviceType: 1 });
 serviceRequestSchema.index({ 'location.district': 1, 'location.sector': 1 });
-serviceRequestSchema.index({ ussdId: 1 }); // NEW: Index for USSD ID lookup
+serviceRequestSchema.index({ ussdId: 1 });
+serviceRequestSchema.index({ farmerPhone: 1 }); // ✅ Add index for phone lookups
 
 module.exports = mongoose.models.ServiceRequest || mongoose.model('ServiceRequest', serviceRequestSchema);
