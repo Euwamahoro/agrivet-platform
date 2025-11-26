@@ -31,14 +31,32 @@ const AvailableRequests: React.FC = () => {
     return `#${requestId.substring(0, 8)}`;
   };
 
-  // In AvailableRequests.tsx
-const getFarmerName = (request: any) => {
-  return request.farmerName || 'Farmer';  
-};
+  // Updated utility functions with logging
+  const getFarmerName = (request: any) => {
+    console.log('🔧 getFarmerName called with:', {
+      farmer: request.farmer,
+      farmerName: request.farmerName,
+      'farmer?.name': request.farmer?.name
+    });
+    
+    // Try all possible locations
+    const name = request.farmerName || request.farmer?.name || 'Farmer';
+    console.log('  → Returning:', name);
+    return name;
+  };
 
-const getFarmerPhone = (request: any) => {
-  return request.farmerPhone || 'N/A';
-};
+  const getFarmerPhone = (request: any) => {
+    console.log('🔧 getFarmerPhone called with:', {
+      farmer: request.farmer,
+      farmerPhone: request.farmerPhone,
+      'farmer?.phoneNumber': request.farmer?.phoneNumber
+    });
+    
+    // Try all possible locations
+    const phone = request.farmerPhone || request.farmer?.phoneNumber || 'N/A';
+    console.log('  → Returning:', phone);
+    return phone;
+  };
 
   const getLocation = (location: any) => {
     if (!location) return 'Location unknown';
@@ -64,11 +82,38 @@ const getFarmerPhone = (request: any) => {
     dispatch(fetchAvailableRequests(filters));
   }, [dispatch, filters]);
 
-  // Debug: Check all available requests
+  // Enhanced debug logging
   useEffect(() => {
-    console.log('🔍 DEBUG - All available requests:', availableRequests);
+    console.log('🖥️ === COMPONENT: PROCESSING REQUESTS ===');
+    console.log('📊 Total available requests:', availableRequests.length);
     
-    // Check what IDs we have - FIXED: Look for id instead of id
+    availableRequests.forEach((request, index) => {
+      console.log(`\n🎨 Component Request ${index + 1}:`);
+      console.log('  Object keys:', Object.keys(request));
+      console.log('  _id:', request._id);
+      console.log('  id:', request.id);
+      console.log('  farmer object:', request.farmer);
+      console.log('  farmerName:', request.farmerName);
+      console.log('  farmerPhone:', request.farmerPhone);
+      console.log('  serviceType:', request.serviceType);
+      console.log('  description:', request.description);
+      console.log('  location:', request.location);
+      console.log('  Full request:', JSON.stringify(request, null, 2));
+      
+      // Test the utility functions
+      const farmerId = getRequestId(request);
+      const farmerName = getFarmerName(request);
+      const farmerPhone = getFarmerPhone(request);
+      const location = getLocation(request.location);
+      
+      console.log('  🔧 Utility function results:');
+      console.log('    getRequestId():', farmerId);
+      console.log('    getFarmerName():', farmerName);
+      console.log('    getFarmerPhone():', farmerPhone);
+      console.log('    getLocation():', location);
+    });
+    
+    // Check what IDs we have
     const requestsWithValidIds = availableRequests.filter(req => 
       req.id && req.id !== 'undefined' && req.id.length > 5
     );
@@ -76,22 +121,10 @@ const getFarmerPhone = (request: any) => {
       !req.id || req.id === 'undefined' || req.id.length < 5
     );
     
-    console.log('🔍 DEBUG - Requests with valid id:', requestsWithValidIds);
-    console.log('🔍 DEBUG - Requests with invalid id:', requestsWithInvalidIds);
+    console.log('🔍 Requests with valid id:', requestsWithValidIds.length);
+    console.log('🔍 Requests with invalid id:', requestsWithInvalidIds.length);
     
-    // Log each request individually - FIXED: Check id field
-    availableRequests.forEach((request, index) => {
-      const requestId = getRequestId(request);
-      console.log(`📋 Request ${index}:`, {
-        id: request.id,
-        chosenId: requestId,
-        hasId: !!requestId,
-        idType: typeof requestId,
-        idLength: requestId?.length,
-        serviceType: request.serviceType,
-        description: request.description?.substring(0, 50) + '...'
-      });
-    });
+    console.log('🖥️ === COMPONENT: PROCESSING COMPLETE ===\n');
   }, [availableRequests]);
 
   const handleAcceptRequest = async (requestId: string) => {
@@ -310,7 +343,7 @@ const getFarmerPhone = (request: any) => {
                         </div>
                         
                         <h4 className="mt-2 text-lg font-medium text-gray-900">
-                          Service Request from {getFarmerName(request.farmer)}
+                          Service Request from {getFarmerName(request)}
                         </h4>
                         
                         <p className="mt-2 text-gray-600">
@@ -322,7 +355,7 @@ const getFarmerPhone = (request: any) => {
                             <strong>Location:</strong> {getLocation(request.location)}
                           </div>
                           <div>
-                            <strong>Contact:</strong> {getFarmerPhone(request.farmer)}
+                            <strong>Contact:</strong> {getFarmerPhone(request)}
                           </div>
                         </div>
                       </div>

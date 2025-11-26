@@ -50,6 +50,8 @@ export interface ServiceRequest {
   updatedAt: string;
   farmer?: Farmer;
   graduate?: Graduate;
+  farmerName?: string;
+  farmerPhone?: string;
 }
 
 export interface AuthState {

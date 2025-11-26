@@ -5,6 +5,9 @@ const Farmer = require('../models/Farmer');
 
 exports.getAvailableRequests = async (req, res) => {
   try {
+    console.log('🔍 === GET AVAILABLE REQUESTS START ===');
+    console.log('📥 Query params:', req.query);
+    
     const { serviceType, location } = req.query;
     
     let filter = { 
@@ -20,38 +23,80 @@ exports.getAvailableRequests = async (req, res) => {
       filter['location.district'] = new RegExp(location, 'i');
     }
 
+    console.log('🔎 Filter being used:', JSON.stringify(filter, null, 2));
+
     const requests = await ServiceRequest.find(filter)
-      .populate('farmer', 'name phoneNumber location') // ✅ FIXED: Get actual farmer fields
       .sort({ createdAt: -1 })
       .limit(50);
 
+    console.log(`📊 Found ${requests.length} requests`);
+    
+    // Log each request in detail
+    requests.forEach((request, index) => {
+      console.log(`\n📋 Request ${index + 1}:`);
+      console.log('  _id:', request._id);
+      console.log('  id field exists?', request.id ? 'YES' : 'NO');
+      console.log('  farmer (ObjectId):', request.farmer);
+      console.log('  farmerName:', request.farmerName);
+      console.log('  farmerPhone:', request.farmerPhone);
+      console.log('  serviceType:', request.serviceType);
+      console.log('  description:', request.description?.substring(0, 50));
+      console.log('  location:', JSON.stringify(request.location));
+      console.log('  status:', request.status);
+      console.log('  createdAt:', request.createdAt);
+    });
+
+    console.log('\n📤 Sending response with', requests.length, 'requests');
+    console.log('🔍 === GET AVAILABLE REQUESTS END ===\n');
+
     res.json(requests);
   } catch (error) {
-    console.error('Get available requests error:', error);
+    console.error('❌ Get available requests error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
 
 exports.acceptRequest = async (req, res) => {
   try {
+    console.log('🔍 === ACCEPT REQUEST START ===');
+    console.log('📥 Request ID:', req.params.requestId);
+    
     const { requestId } = req.params;
     
     // Find the graduate
     const graduate = await Graduate.findOne({ user: req.user._id });
     if (!graduate) {
+      console.error('❌ Graduate profile not found for user:', req.user._id);
       return res.status(404).json({ error: 'Graduate profile not found' });
     }
     
+    console.log('✅ Graduate found:', graduate._id);
+    console.log('✅ Graduate available?', graduate.isAvailable);
+    
     if (!graduate.isAvailable) {
+      console.error('❌ Graduate is not available');
       return res.status(400).json({ error: 'You must be available to accept requests' });
     }
 
     const request = await ServiceRequest.findById(requestId);
     if (!request) {
+      console.error('❌ Service request not found:', requestId);
       return res.status(404).json({ error: 'Service request not found' });
     }
 
+    console.log('✅ Request found:', {
+      _id: request._id,
+      status: request.status,
+      graduate: request.graduate,
+      farmerName: request.farmerName,
+      farmerPhone: request.farmerPhone
+    });
+
     if (request.status !== 'pending' || request.graduate) {
+      console.error('❌ Request is no longer available:', {
+        status: request.status,
+        graduate: request.graduate
+      });
       return res.status(400).json({ error: 'Request is no longer available' });
     }
 
@@ -61,15 +106,14 @@ exports.acceptRequest = async (req, res) => {
     request.assignedAt = new Date();
     
     await request.save();
-
-    // Populate response data
-    await request.populate('farmer', 'province district sector cell');
-    await request.populate('farmer.user', 'name phoneNumber');
-    await request.populate('graduate');
+    
+    console.log('✅ Request updated and saved');
+    console.log('📤 Sending response');
+    console.log('🔍 === ACCEPT REQUEST END ===\n');
 
     res.json(request);
   } catch (error) {
-    console.error('Accept request error:', error);
+    console.error('❌ Accept request error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -120,11 +164,6 @@ exports.updateRequestStatus = async (req, res) => {
 
     await request.save();
 
-    // Populate response data
-    await request.populate('farmer', 'province district sector cell');
-    await request.populate('farmer.user', 'name phoneNumber');
-    await request.populate('graduate');
-
     res.json(request);
   } catch (error) {
     console.error('Update request status error:', error);
@@ -140,8 +179,6 @@ exports.getMyAssignments = async (req, res) => {
     }
 
     const requests = await ServiceRequest.find({ graduate: graduate._id })
-      .populate('farmer', 'province district sector cell')
-      .populate('farmer.user', 'name phoneNumber')
       .sort({ updatedAt: -1 });
 
     res.json(requests);
