@@ -46,14 +46,14 @@ const RequestDetails: React.FC = () => {
     return id ? `#${id.substring(0, 8)}` : '#Unknown';
   };
 
-  // Safe function to get farmer name
+  // FIXED: Get farmer name directly from request
   const getFarmerName = () => {
-    return request?.farmer?.name || 'Not specified';
+    return request?.farmerName || request?.farmer?.name || 'Not specified';
   };
 
-  // Safe function to get farmer phone
+  // FIXED: Get farmer phone directly from request
   const getFarmerPhone = () => {
-    return request?.farmer?.phoneNumber || 'Not specified';
+    return request?.farmerPhone || request?.farmer?.phoneNumber || 'Not specified';
   };
 
   // Safe function to get location
@@ -120,6 +120,9 @@ const RequestDetails: React.FC = () => {
 
   const isAvailableRequest = availableRequests.some(req => req.id === requestId);
   const isMyAssignment = assignedRequests.some(req => req.id === requestId);
+
+  // Debug: Log the request data to see the structure
+  console.log('Request Details Data:', request);
 
   return (
     <div className="space-y-6">
